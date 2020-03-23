@@ -44,6 +44,89 @@ func ValidateIndividualMessage(astarteInterface AstarteInterface, path string, v
 	return validateType(mapping.Type, value)
 }
 
+// ValidateQuery validates whether a query path on an interface is valid or not. Ideally,
+// this will match paths which are identical to at least a portion of an existing mapping in the interface
+// for individual interfaces, and will match paths which are equal to all endpoints for all depth levels
+// below `(endpoint levels)-1` for aggregate interfaces
+func ValidateQuery(astarteInterface AstarteInterface, queryPath string) error {
+	if queryPath == "/" {
+		// It is always allowed.
+		return nil
+	}
+
+	// Trailing slash (single) is a valid query (albeit not recommended). Trim it for
+	// validation reasons.
+	queryPath = strings.TrimSuffix(queryPath, "/")
+
+	if astarteInterface.Aggregation == ObjectAggregation {
+		return validateAggregateQuery(astarteInterface, queryPath)
+	}
+
+	return validateIndividualQuery(astarteInterface, queryPath)
+}
+
+func validateIndividualQuery(astarteInterface AstarteInterface, queryPath string) error {
+	queryPathTokens := strings.Split(queryPath, "/")
+	for _, m := range astarteInterface.Mappings {
+		endpointTokens := strings.Split(m.Endpoint, "/")
+		if len(queryPathTokens) > len(endpointTokens) {
+			// Continue checking - individual interfaces might have different depth levels for endpoints
+			continue
+		}
+
+		matches := true
+		for i, t := range queryPathTokens {
+			if strings.HasPrefix(endpointTokens[i], "%{") {
+				// Parametric, continue
+				continue
+			}
+			if endpointTokens[i] != t {
+				// Doesn't match. Move to the next mapping.
+				matches = false
+				break
+			}
+		}
+
+		if matches {
+			// Got it. It's a valid query.
+			return nil
+		}
+	}
+
+	// If we got here, nothing was found
+	return fmt.Errorf("%s does not match valid query paths for interface", queryPath)
+}
+
+func validateAggregateQuery(astarteInterface AstarteInterface, queryPath string) error {
+	for _, m := range astarteInterface.Mappings {
+		if err := validateSingleAggregatePathQuery(m, queryPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateSingleAggregatePathQuery(astarteMapping AstarteInterfaceMapping, queryPath string) error {
+	endpointTokens := strings.Split(astarteMapping.Endpoint, "/")
+	queryPathTokens := strings.Split(queryPath, "/")
+	if len(queryPathTokens) > len(endpointTokens)-1 {
+		return fmt.Errorf("%s does not match valid query paths for interface", queryPath)
+	}
+
+	for i, t := range queryPathTokens {
+		if strings.HasPrefix(endpointTokens[i], "%{") {
+			// Parametric, continue
+			continue
+		}
+		if endpointTokens[i] != t {
+			// To be a valid query path, all endpoints must match the query path.
+			return fmt.Errorf("%s does not match valid query paths for endpoint %s", queryPath, astarteMapping.Endpoint)
+		}
+	}
+
+	return nil
+}
+
 // InterfaceMappingFromPath retrieves the corresponding interface mapping given a path, and returns a meaningful error
 // the path cannot be resolved.
 func InterfaceMappingFromPath(astarteInterface AstarteInterface, interfacePath string) (AstarteInterfaceMapping, error) {
