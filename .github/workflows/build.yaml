@@ -1,0 +1,51 @@
+name: Build and Test
+
+on:
+  # Run when pushing to stable branches
+  push:
+    branches:
+    - 'master'
+    - 'release-*'
+  # Run on branch/tag creation
+  create:
+  # Run on pull requests
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go:
+        - 1.12.x
+        - 1.13.x
+        - 1.14.x
+        os:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+    - name: Check gofmt
+      run: diff -u <(echo -n) <(gofmt -d ./...)
+      if: matrix.os != 'windows-latest'
+    - name: Run go vet
+      run: go vet $(go list ./... | grep -v /vendor/)
+    - name: Build
+      run: go build -v ./...
+    - name: Test (with coverprofile)
+      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.14.x'
+    - name: Test (no coverprofile)
+      run: go test -v -race ./...
+      if: matrix.os != 'ubuntu-latest' || matrix.go != '1.14.x'
+    # Upload coverage report only in one case of the matrix
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v1
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.14.x'
