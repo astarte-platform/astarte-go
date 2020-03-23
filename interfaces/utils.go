@@ -24,7 +24,7 @@ import (
 func ValidateAggregateMessage(astarteInterface AstarteInterface, values map[string]interface{}) error {
 	for k, v := range values {
 		// Validate the individual message
-		if err := ValidateIndividualMessage(astarteInterface, "/"+k, v); err != nil {
+		if err := ValidateIndividualMessage(astarteInterface, k, v); err != nil {
 			return err
 		}
 	}
