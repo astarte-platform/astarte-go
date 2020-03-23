@@ -282,10 +282,112 @@ func (s *AstarteMappingDatabaseRetentionPolicy) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// AstarteMappingType represents the type of a single mapping. Astarte Types are natively inferred from golang
+// native types, as long as the conversion does not lose precision, e.g.: an `int32` value will be accepted
+// as a "double" type, but a `float64` value won't be accepted as a "integer" type
+type AstarteMappingType int
+
+const (
+	// Double represents the "double" type in Astarte. It maps to golang `float64` type,
+	// but also accepts implicit conversions from any int or float type
+	Double AstarteMappingType = iota
+	// Integer represents the "integer" type in Astarte. It maps to golang `int` type,
+	// but also accepts implicit conversions from any int type < 64bit
+	Integer
+	// Boolean represents the "boolean" type in Astarte. It maps to golang `bool` type
+	Boolean
+	// LongInteger represents the "longinteger" type in Astarte. It maps to golang `int64` type,
+	// but also accepts implicit conversions from any int type
+	LongInteger
+	// String represents the "string" type in Astarte. It maps to golang `string` type
+	String
+	// BinaryBlob represents the "binaryblob" type in Astarte. It maps to golang `[]byte` type
+	BinaryBlob
+	// DateTime represents the "datetime" type in Astarte. It maps to golang `time.Time` type
+	DateTime
+	// DoubleArray represents the "doublearray" type in Astarte. It maps to golang `[]float` type,
+	// but also accepts implicit conversions from any int or float type array
+	DoubleArray
+	// IntegerArray represents the "integerarray" type in Astarte. It maps to golang `[]int` type,
+	// but also accepts implicit conversions from any int type < 64bit
+	IntegerArray
+	// BooleanArray represents the "booleanarray" type in Astarte. It maps to golang `[]bool` type
+	BooleanArray
+	// LongIntegerArray represents the "longintegerarray" type in Astarte. It maps to golang `[]int64` type,
+	// but also accepts implicit conversions from any int type
+	LongIntegerArray
+	// StringArray represents the "stringarray" type in Astarte. It maps to golang `[]string` type
+	StringArray
+	// BinaryBlobArray represents the "binaryblobarray" type in Astarte. It maps to golang `[]byte` type
+	BinaryBlobArray
+	// DateTimeArray represents the "datetimearray" type in Astarte. It maps to golang `[]time.Time` type
+	DateTimeArray
+)
+
+func (s AstarteMappingType) String() string {
+	return astarteMappingTypeToString[s]
+}
+
+var astarteMappingTypeToString = map[AstarteMappingType]string{
+	Double:           "double",
+	Integer:          "integer",
+	Boolean:          "boolean",
+	LongInteger:      "longinteger",
+	String:           "string",
+	BinaryBlob:       "binaryblob",
+	DateTime:         "datetime",
+	DoubleArray:      "doublearray",
+	IntegerArray:     "integerarray",
+	BooleanArray:     "booleanarray",
+	LongIntegerArray: "longintegerarray",
+	StringArray:      "stringarray",
+	BinaryBlobArray:  "binaryblobarray",
+	DateTimeArray:    "datetimearray",
+}
+
+var astarteMappingTypeToID = map[string]AstarteMappingType{
+	"double":           Double,
+	"integer":          Integer,
+	"boolean":          Boolean,
+	"longinteger":      LongInteger,
+	"string":           String,
+	"binaryblob":       BinaryBlob,
+	"datetime":         DateTime,
+	"doublearray":      DoubleArray,
+	"integerarray":     IntegerArray,
+	"booleanarray":     BooleanArray,
+	"longintegerarray": LongIntegerArray,
+	"stringarray":      StringArray,
+	"binaryblobarray":  BinaryBlobArray,
+	"datetimearray":    DateTimeArray,
+}
+
+// MarshalJSON marshals the enum as a quoted json string
+func (s AstarteMappingType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(astarteMappingTypeToString[s])
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (s *AstarteMappingType) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Return if found
+	if val, ok := astarteMappingTypeToID[j]; ok {
+		*s = val
+		return nil
+	}
+
+	// Fail if not found
+	return fmt.Errorf("%s is not a valid Astarte type", j)
+}
+
 // AstarteInterfaceMapping represents an individual Mapping in an Astarte Interface
 type AstarteInterfaceMapping struct {
 	Endpoint                string                                `json:"endpoint"`
-	Type                    string                                `json:"type"`
+	Type                    AstarteMappingType                    `json:"type"`
 	Reliability             AstarteMappingReliability             `json:"reliability,omitempty"`
 	Retention               AstarteMappingRetention               `json:"retention,omitempty"`
 	DatabaseRetentionPolicy AstarteMappingDatabaseRetentionPolicy `json:"database_retention_policy,omitempty"`

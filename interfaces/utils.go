@@ -17,16 +17,16 @@ package interfaces
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // ValidateAggregateMessage validates an aggregate message
 func ValidateAggregateMessage(astarteInterface AstarteInterface, values map[string]interface{}) error {
 	for k, v := range values {
 		// Validate the individual message
-		if err := ValidateIndividualMessage(astarteInterface, "/"+k, v); err != nil {
+		if err := ValidateIndividualMessage(astarteInterface, k, v); err != nil {
 			return err
 		}
-		// TODO: validate the type
 	}
 
 	return nil
@@ -35,14 +35,13 @@ func ValidateAggregateMessage(astarteInterface AstarteInterface, values map[stri
 // ValidateIndividualMessage validates an individual message
 func ValidateIndividualMessage(astarteInterface AstarteInterface, path string, value interface{}) error {
 	// Get the corresponding mapping
-	_, err := InterfaceMappingFromPath(astarteInterface, path)
+	mapping, err := InterfaceMappingFromPath(astarteInterface, path)
 	if err != nil {
 		return err
 	}
 
-	// TODO: validate the type
-
-	return nil
+	// Validate type and return result
+	return validateType(mapping.Type, value)
 }
 
 // InterfaceMappingFromPath retrieves the corresponding interface mapping given a path, and returns a meaningful error
@@ -95,4 +94,69 @@ func parametricMappingValidation(astarteInterface AstarteInterface, interfacePat
 		}
 	}
 	return AstarteInterfaceMapping{}, fmt.Errorf("Path %s does not exist on Interface %s", interfacePath, astarteInterface.Name)
+}
+
+func validateType(mappingType AstarteMappingType, value interface{}) error {
+	// Do a case switch and check, depending on the golang type of value, whether
+	// we have a match with the Astarte type or not.
+	switch value.(type) {
+	case int, int8, int16, int32, uint, uint16, uint32:
+		if mappingType == Integer || mappingType == LongInteger || mappingType == Double {
+			return nil
+		}
+	case int64, uint64:
+		if mappingType == LongInteger || mappingType == Double {
+			return nil
+		}
+	case float32, float64:
+		if mappingType == Double {
+			return nil
+		}
+	case string:
+		if mappingType == String {
+			return nil
+		}
+	case bool:
+		if mappingType == Boolean {
+			return nil
+		}
+	case []byte:
+		if mappingType == BinaryBlob {
+			return nil
+		}
+	case time.Time, *time.Time:
+		if mappingType == DateTime {
+			return nil
+		}
+	case []int, []int8, []int16, []int32, []uint, []uint16, []uint32:
+		if mappingType == IntegerArray || mappingType == LongIntegerArray || mappingType == DoubleArray {
+			return nil
+		}
+	case []int64:
+		if mappingType == LongIntegerArray || mappingType == DoubleArray {
+			return nil
+		}
+	case []float32, []float64:
+		if mappingType == DoubleArray {
+			return nil
+		}
+	case []string:
+		if mappingType == StringArray {
+			return nil
+		}
+	case []bool:
+		if mappingType == BooleanArray {
+			return nil
+		}
+	case [][]byte:
+		if mappingType == BinaryBlobArray {
+			return nil
+		}
+	case []time.Time, []*time.Time:
+		if mappingType == DateTimeArray {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Value for mapping does not match type restrictions for %s", mappingType.String())
 }
