@@ -62,6 +62,17 @@ func TestMessageValidation(t *testing.T) {
 	if err := ValidateIndividualMessage(i, "/testSensor/name", "test"); err != nil {
 		t.Error(err)
 	}
+
+	// Validate queries
+	if err := ValidateQuery(i, "/testSensor/name"); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateQuery(i, "/testSensor"); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateQuery(i, "/"); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestParametricMessageWrongPaths(t *testing.T) {
@@ -112,6 +123,14 @@ func TestParametricMessageWrongPaths(t *testing.T) {
 	if _, err := InterfaceMappingFromPath(i, "/testSensor/extra/path"); err == nil {
 		t.Fail()
 	}
+
+	// Validate queries
+	if err := ValidateQuery(i, "/testSensor/names"); err == nil {
+		t.Fail()
+	}
+	if err := ValidateQuery(i, "/testSensor/names/extra"); err == nil {
+		t.Fail()
+	}
 }
 
 func TestAggregateMessageValidation(t *testing.T) {
@@ -120,14 +139,14 @@ func TestAggregateMessageValidation(t *testing.T) {
 		"interface_name": "org.astarte-platform.genericsensors.AvailableSensors",
 		"version_major": 0,
 		"version_minor": 1,
-		"type": "properties",
+		"type": "datastream",
 		"ownership": "device",
 		"aggregation": "object",
 		"description": "Describes available generic sensors.",
 		"doc": "This interface allows to describe available sensors and their attributes such as name and sampled data measurement unit. Sensors are identified by their sensor_id. See also org.astarte-platform.genericsensors.AvailableSensors.",
 		"mappings": [
 			{
-				"endpoint": "/%{sensor_id}/name",
+				"endpoint": "/sensors/%{sensor_id}/name",
 				"type": "string",
 				"description": "Sensor name.",
 				"doc": "An arbitrary sensor name.",
@@ -137,7 +156,7 @@ func TestAggregateMessageValidation(t *testing.T) {
 				"database_retention_ttl": 200
 			},
 			{
-				"endpoint": "/%{sensor_id}/unit",
+				"endpoint": "/sensors/%{sensor_id}/unit",
 				"type": "string",
 				"description": "Sample data measurement unit.",
 				"doc": "SI unit such as m, kg, K, etc..."
@@ -150,10 +169,21 @@ func TestAggregateMessageValidation(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := ValidateInterfacePath(i, "/testSensor/name"); err != nil {
+	if err := ValidateInterfacePath(i, "/sensors/testSensor/name"); err != nil {
 		t.Error(err)
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/testSensor/name": "test"}); err != nil {
+	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/name": "test"}); err != nil {
+		t.Error(err)
+	}
+
+	// Validate queries
+	if err := ValidateQuery(i, "/sensors/testSensor"); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateQuery(i, "/sensors"); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateQuery(i, "/"); err != nil {
 		t.Error(err)
 	}
 }
@@ -164,14 +194,14 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 		"interface_name": "org.astarte-platform.genericsensors.AvailableSensors",
 		"version_major": 0,
 		"version_minor": 1,
-		"type": "properties",
+		"type": "datastream",
 		"ownership": "device",
 		"aggregation": "object",
 		"description": "Describes available generic sensors.",
 		"doc": "This interface allows to describe available sensors and their attributes such as name and sampled data measurement unit. Sensors are identified by their sensor_id. See also org.astarte-platform.genericsensors.AvailableSensors.",
 		"mappings": [
 			{
-				"endpoint": "/%{sensor_id}/name",
+				"endpoint": "/sensors/%{sensor_id}/name",
 				"type": "string",
 				"description": "Sensor name.",
 				"doc": "An arbitrary sensor name.",
@@ -181,7 +211,7 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 				"database_retention_ttl": 200
 			},
 			{
-				"endpoint": "/%{sensor_id}/unit",
+				"endpoint": "/sensors/%{sensor_id}/unit",
 				"type": "string",
 				"description": "Sample data measurement unit.",
 				"doc": "SI unit such as m, kg, K, etc..."
@@ -194,16 +224,24 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := ValidateInterfacePath(i, "/testSensor/name/extra"); err == nil {
+	if err := ValidateInterfacePath(i, "/sensors/testSensor/name/extra"); err == nil {
 		t.Fail()
 	}
-	if err := ValidateInterfacePath(i, "/testSensor/names"); err == nil {
+	if err := ValidateInterfacePath(i, "/sensors/testSensor/names"); err == nil {
 		t.Fail()
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/testSensor/names": "check"}); err == nil {
+	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/names": "check"}); err == nil {
 		t.Fail()
 	}
-	if _, err := InterfaceMappingFromPath(i, "/testSensor/names"); err == nil {
+	if _, err := InterfaceMappingFromPath(i, "/sensors/testSensor/names"); err == nil {
+		t.Fail()
+	}
+
+	// Validate queries
+	if err := ValidateQuery(i, "/sensors/testSensor/name"); err == nil {
+		t.Fail()
+	}
+	if err := ValidateQuery(i, "/sensorsa/testSensor"); err == nil {
 		t.Fail()
 	}
 }
