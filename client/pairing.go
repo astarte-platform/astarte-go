@@ -29,7 +29,7 @@ type PairingService struct {
 // RegisterDevice registers a new device into the Realm.
 // Returns the Credential Secret of the Device when successful.
 // TODO: add support for initial_introspection
-func (s *PairingService) RegisterDevice(realm string, deviceID string, token string) (string, error) {
+func (s *PairingService) RegisterDevice(realm string, deviceID string) (string, error) {
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/agent/devices", realm))
 
@@ -38,7 +38,7 @@ func (s *PairingService) RegisterDevice(realm string, deviceID string, token str
 	}
 	requestBody.HwID = deviceID
 
-	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, token, 201)
+	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, 201)
 	if err != nil {
 		return "", err
 	}
@@ -57,11 +57,11 @@ func (s *PairingService) RegisterDevice(realm string, deviceID string, token str
 
 // UnregisterDevice resets the registration state of a device. This makes it possible to register it again.
 // All data belonging to the device will be left as is in Astarte.
-func (s *PairingService) UnregisterDevice(realm string, deviceID string, token string) error {
+func (s *PairingService) UnregisterDevice(realm string, deviceID string) error {
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/agent/devices/%s", realm, deviceID))
 
-	err := s.client.genericJSONDataAPIDelete(callURL.String(), token, 204)
+	err := s.client.genericJSONDataAPIDelete(callURL.String(), 204)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,9 @@ func (s *PairingService) UnregisterDevice(realm string, deviceID string, token s
 }
 
 // ObtainNewMQTTv1CertificateForDevice returns a valid SSL Certificate for Devices running on astarte_mqtt_v1.
-// This API is meant to be called by the device
-func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, credentialsSecret, csr string) (string, error) {
+// This API is meant to be called by the device, and your Client needs to have the Device's Credentials Secret
+// as its token. Always call SetToken with the Credentials Secret before calling this function.
+func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, csr string) (string, error) {
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s/protocols/astarte_mqtt_v1/credentials", realm, deviceID))
 
@@ -80,7 +81,7 @@ func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, cr
 	}
 	requestBody.CSR = csr
 
-	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, credentialsSecret, 201)
+	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, 201)
 	if err != nil {
 		return "", err
 	}
@@ -99,12 +100,13 @@ func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, cr
 
 // GetMQTTv1ProtocolInformationForDevice returns protocol information (such as the broker URL) for devices running
 // on astarte_mqtt_v1.
-// This API is meant to be called by the device
-func (s *PairingService) GetMQTTv1ProtocolInformationForDevice(realm, deviceID, credentialsSecret string) (AstarteMQTTv1ProtocolInformation, error) {
+// This API is meant to be called by the device, and your Client needs to have the Device's Credentials Secret
+// as its token. Always call SetToken with the Credentials Secret before calling this function.
+func (s *PairingService) GetMQTTv1ProtocolInformationForDevice(realm, deviceID string) (AstarteMQTTv1ProtocolInformation, error) {
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), credentialsSecret, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return AstarteMQTTv1ProtocolInformation{}, err
 	}

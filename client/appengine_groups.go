@@ -23,10 +23,10 @@ import (
 // This file contains all API Calls related to device group management
 
 // ListGroups lists the groups in a Realm
-func (s *AppEngineService) ListGroups(realm string, token string) ([]string, error) {
+func (s *AppEngineService) ListGroups(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -43,11 +43,11 @@ func (s *AppEngineService) ListGroups(realm string, token string) ([]string, err
 
 // CreateGroup creates a group with the given deviceIdentifierList in the Realm
 func (s *AppEngineService) CreateGroup(realm string, groupName string, deviceIdentifierList []string,
-	deviceIdentifiersType DeviceIdentifierType, token string) error {
+	deviceIdentifiersType DeviceIdentifierType) error {
 
 	deviceIDList := make([]string, len(deviceIdentifierList))
 	for i, deviceIdentifier := range deviceIdentifierList {
-		deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifiersType, token)
+		deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifiersType)
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func (s *AppEngineService) CreateGroup(realm string, groupName string, deviceIde
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
 	payload := map[string]interface{}{"group_name": groupName, "devices": deviceIDList}
-	err := s.client.genericJSONDataAPIPost(callURL.String(), payload, token, 201)
+	err := s.client.genericJSONDataAPIPost(callURL.String(), payload, 201)
 	if err != nil {
 		return err
 	}
@@ -65,10 +65,10 @@ func (s *AppEngineService) CreateGroup(realm string, groupName string, deviceIde
 }
 
 // ListGroupDevices lists the devices that belong to a group
-func (s *AppEngineService) ListGroupDevices(realm string, groupName string, token string) ([]string, error) {
+func (s *AppEngineService) ListGroupDevices(realm string, groupName string) ([]string, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -85,15 +85,15 @@ func (s *AppEngineService) ListGroupDevices(realm string, groupName string, toke
 
 // AddDeviceToGroup adds a device to the group
 func (s *AppEngineService) AddDeviceToGroup(realm string, groupName string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType, token string) error {
+	deviceIdentifierType DeviceIdentifierType) error {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
-	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType, token)
+	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType)
 	if err != nil {
 		return err
 	}
 	payload := map[string]string{"device_id": deviceID}
-	err = s.client.genericJSONDataAPIPost(callURL.String(), payload, token, 201)
+	err = s.client.genericJSONDataAPIPost(callURL.String(), payload, 201)
 	if err != nil {
 		return err
 	}
@@ -103,14 +103,14 @@ func (s *AppEngineService) AddDeviceToGroup(realm string, groupName string, devi
 
 // RemoveDeviceFromGroup removes a device from the group
 func (s *AppEngineService) RemoveDeviceFromGroup(realm string, groupName string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType, token string) error {
-	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType, token)
+	deviceIdentifierType DeviceIdentifierType) error {
+	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType)
 	if err != nil {
 		return err
 	}
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices/%s", realm, url.PathEscape(groupName), deviceID))
-	err = s.client.genericJSONDataAPIDelete(callURL.String(), token, 204)
+	err = s.client.genericJSONDataAPIDelete(callURL.String(), 204)
 	if err != nil {
 		return err
 	}

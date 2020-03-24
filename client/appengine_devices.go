@@ -36,10 +36,10 @@ const (
 )
 
 // ListDevices returns a list of Devices in the Realm
-func (s *AppEngineService) ListDevices(realm string, token string) ([]string, error) {
+func (s *AppEngineService) ListDevices(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +55,11 @@ func (s *AppEngineService) ListDevices(realm string, token string) ([]string, er
 }
 
 // GetDevice returns the DeviceDetails of a single Device in the Realm
-func (s *AppEngineService) GetDevice(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, token string) (DeviceDetails, error) {
+func (s *AppEngineService) GetDevice(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (DeviceDetails, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return DeviceDetails{}, err
 	}
@@ -77,19 +77,19 @@ func (s *AppEngineService) GetDevice(realm string, deviceIdentifier string, devi
 // GetDeviceIDFromDeviceIdentifier returns the DeviceID of a Device identified with a deviceIdentifier
 // of type deviceIdentifierType.
 func (s *AppEngineService) GetDeviceIDFromDeviceIdentifier(realm string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType, token string) (string, error) {
+	deviceIdentifierType DeviceIdentifierType) (string, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	switch resolvedDeviceIdentifierType {
 	case AstarteDeviceAlias:
-		return s.GetDeviceIDFromAlias(realm, deviceIdentifier, token)
+		return s.GetDeviceIDFromAlias(realm, deviceIdentifier)
 	default:
 		return deviceIdentifier, nil
 	}
 }
 
 // GetDeviceIDFromAlias returns the Device ID of a device given one of its aliases
-func (s *AppEngineService) GetDeviceIDFromAlias(realm string, deviceAlias string, token string) (string, error) {
-	deviceDetails, err := s.GetDevice(realm, deviceAlias, AstarteDeviceAlias, token)
+func (s *AppEngineService) GetDeviceIDFromAlias(realm string, deviceAlias string) (string, error) {
+	deviceDetails, err := s.GetDevice(realm, deviceAlias, AstarteDeviceAlias)
 	if err != nil {
 		return "", err
 	}
@@ -99,11 +99,11 @@ func (s *AppEngineService) GetDeviceIDFromAlias(realm string, deviceAlias string
 
 // ListDeviceInterfaces returns the list of Interfaces exposed by the Device's introspection
 func (s *AppEngineService) ListDeviceInterfaces(realm string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType, token string) ([]string, error) {
+	deviceIdentifierType DeviceIdentifierType) ([]string, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s/interfaces", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +119,8 @@ func (s *AppEngineService) ListDeviceInterfaces(realm string, deviceIdentifier s
 }
 
 // ListDeviceAliases is an helper to list all aliases of a Device
-func (s *AppEngineService) ListDeviceAliases(realm string, deviceID string, token string) (map[string]string, error) {
-	deviceDetails, err := s.GetDevice(realm, deviceID, AstarteDeviceID, token)
+func (s *AppEngineService) ListDeviceAliases(realm string, deviceID string) (map[string]string, error) {
+	deviceDetails, err := s.GetDevice(realm, deviceID, AstarteDeviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +128,11 @@ func (s *AppEngineService) ListDeviceAliases(realm string, deviceID string, toke
 }
 
 // AddDeviceAlias adds an Alias to a Device
-func (s *AppEngineService) AddDeviceAlias(realm string, deviceID string, aliasTag string, deviceAlias string, token string) error {
+func (s *AppEngineService) AddDeviceAlias(realm string, deviceID string, aliasTag string, deviceAlias string) error {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 	payload := map[string]map[string]string{"aliases": {aliasTag: deviceAlias}}
-	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, token, 200)
+	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, 200)
 	if err != nil {
 		return err
 	}
@@ -141,13 +141,13 @@ func (s *AppEngineService) AddDeviceAlias(realm string, deviceID string, aliasTa
 }
 
 // DeleteDeviceAlias deletes an Alias from a Device based on the Alias' tag
-func (s *AppEngineService) DeleteDeviceAlias(realm string, deviceID string, aliasTag string, token string) error {
+func (s *AppEngineService) DeleteDeviceAlias(realm string, deviceID string, aliasTag string) error {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 	// We're using map[string]interface{} rather than map[string]string since we want to have null
 	// rather than an empty string in the JSON payload, and this is the only way.
 	payload := map[string]map[string]interface{}{"aliases": {aliasTag: nil}}
-	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, token, 200)
+	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, 200)
 	if err != nil {
 		return err
 	}
@@ -157,12 +157,12 @@ func (s *AppEngineService) DeleteDeviceAlias(realm string, deviceID string, alia
 
 // InhibitDevice sets the Credentials Inhibition state of a Device
 func (s *AppEngineService) InhibitDevice(realm string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType, token string, inhibit bool) error {
+	deviceIdentifierType DeviceIdentifierType, inhibit bool) error {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 	payload := map[string]bool{"credentials_inhibited": inhibit}
-	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, token, 200)
+	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, 200)
 	if err != nil {
 		return err
 	}
@@ -171,10 +171,10 @@ func (s *AppEngineService) InhibitDevice(realm string, deviceIdentifier string,
 }
 
 // GetDevicesStats returns the DevicesStats of a Realm
-func (s *AppEngineService) GetDevicesStats(realm string, token string) (DevicesStats, error) {
+func (s *AppEngineService) GetDevicesStats(realm string) (DevicesStats, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/stats/devices", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return DevicesStats{}, err
 	}

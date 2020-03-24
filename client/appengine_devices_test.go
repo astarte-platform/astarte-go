@@ -25,7 +25,7 @@ func TestListDevices(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	devices, err := client.AppEngine.ListDevices(testRealmName, testTokenValue)
+	devices, err := client.AppEngine.ListDevices(testRealmName)
 	if err != nil {
 		t.Error(err)
 	}

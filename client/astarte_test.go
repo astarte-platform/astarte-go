@@ -126,6 +126,7 @@ func getTestContext(t *testing.T) (*Client, *httptest.Server) {
 	if err != nil {
 		t.Error(err)
 	}
+	client.SetToken(testTokenValue)
 
 	return client, server
 }
