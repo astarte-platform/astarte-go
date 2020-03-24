@@ -136,7 +136,7 @@ type DeviceDetails struct {
 type DatastreamValue struct {
 	Value              interface{} `json:"value"`
 	Timestamp          time.Time   `json:"timestamp"`
-	ReceptionTimestamp time.Time   `json:"reception_timestamp"`
+	ReceptionTimestamp time.Time   `json:"reception_timestamp,omitempty"`
 }
 
 // DatastreamAggregateValue represent one single Datastream Value for an Aggregate
