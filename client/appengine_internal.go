@@ -78,7 +78,7 @@ func parsePropertiesMap(aMap map[string]interface{}, completeKeyPath string) map
 	for key, val := range aMap {
 		switch actualVal := val.(type) {
 		case map[string]interface{}:
-			for k, v := range parsePropertiesMap(val.(map[string]interface{}), completeKeyPath+"/"+key) {
+			for k, v := range parsePropertiesMap(actualVal, completeKeyPath+"/"+key) {
 				m[k] = v
 			}
 		default:
@@ -109,10 +109,10 @@ func parseAggregateDatastreamMap(aMap orderedmap.OrderedMap, completeKeyPath str
 	foundAnything := false
 	for _, key := range aMap.Keys() {
 		val, _ := aMap.Get(key)
-		switch val.(type) {
+		switch cVal := val.(type) {
 		case orderedmap.OrderedMap:
 			foundAnything = true
-			parsedMap, err := parseAggregateDatastreamMap(val.(orderedmap.OrderedMap), completeKeyPath+"/"+key)
+			parsedMap, err := parseAggregateDatastreamMap(cVal, completeKeyPath+"/"+key)
 			if err != nil {
 				return nil, err
 			}
@@ -132,12 +132,12 @@ func parseAggregateDatastreamValue(aMap orderedmap.OrderedMap) (DatastreamAggreg
 	// Ensure some type safety
 	var timestamp time.Time
 	timestampInterface, _ := aMap.Get("timestamp")
-	switch timestampInterface.(type) {
+	switch t := timestampInterface.(type) {
 	case time.Time:
-		timestamp = timestampInterface.(time.Time)
+		timestamp = t
 	case string:
 		var err error
-		timestamp, err = time.Parse(time.RFC3339Nano, timestampInterface.(string))
+		timestamp, err = time.Parse(time.RFC3339Nano, t)
 		if err != nil {
 			return DatastreamAggregateValue{}, err
 		}
@@ -166,10 +166,10 @@ func parseDatastreamMap(aMap map[string]interface{}, completeKeyPath string) (ma
 
 	foundAnything := false
 	for key, val := range aMap {
-		switch val.(type) {
+		switch cVal := val.(type) {
 		case map[string]interface{}:
 			foundAnything = true
-			parsedMap, err := parseDatastreamMap(val.(map[string]interface{}), completeKeyPath+"/"+key)
+			parsedMap, err := parseDatastreamMap(cVal, completeKeyPath+"/"+key)
 			if err != nil {
 				return nil, err
 			}
