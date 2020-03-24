@@ -1,4 +1,4 @@
-// Copyright © 2019 Ispirata Srl
+// Copyright © 2019-2020 Ispirata Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ type DatastreamPaginator struct {
 	nextWindow     time.Time
 	pageSize       int
 	client         *Client
-	token          string
 	hasNextPage    bool
 	resultSetOrder ResultSetOrder
 }
@@ -76,7 +75,7 @@ func (d *DatastreamPaginator) GetNextPage() ([]DatastreamValue, error) {
 
 	callURL, _ := d.setupCallURL()
 
-	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), d.token, 200)
+	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +107,7 @@ func (d *DatastreamPaginator) GetNextAggregatePage() ([]DatastreamAggregateValue
 
 	callURL, _ := d.setupCallURL()
 
-	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), d.token, 200)
+	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}

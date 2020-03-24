@@ -1,4 +1,4 @@
-// Copyright © 2019 Ispirata Srl
+// Copyright © 2019-2020 Ispirata Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ type HousekeepingService struct {
 func (s *HousekeepingService) ListRealms(token string) ([]string, error) {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, "/v1/realms")
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -47,10 +47,10 @@ func (s *HousekeepingService) ListRealms(token string) ([]string, error) {
 }
 
 // GetRealm returns data about a single Realm.
-func (s *HousekeepingService) GetRealm(realm string, token string) (RealmDetails, error) {
+func (s *HousekeepingService) GetRealm(realm string) (RealmDetails, error) {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/realms/%s", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return RealmDetails{}, err
 	}
@@ -66,29 +66,29 @@ func (s *HousekeepingService) GetRealm(realm string, token string) (RealmDetails
 }
 
 // CreateRealm creates a new Realm in the Cluster with default parameters.
-func (s *HousekeepingService) CreateRealm(realm string, publicKeyString string, token string) error {
-	return s.createRealmInternal(realm, publicKeyString, 0, nil, token)
+func (s *HousekeepingService) CreateRealm(realm string, publicKeyString string) error {
+	return s.createRealmInternal(realm, publicKeyString, 0, nil)
 }
 
 // CreateRealmWithReplicationFactor creates a new Realm in the Cluster with a custom Replication Factor.
 // The replication factor must always be > 0.
 func (s *HousekeepingService) CreateRealmWithReplicationFactor(realm string, publicKeyString string,
-	replicationFactor int, token string) error {
+	replicationFactor int) error {
 	if replicationFactor <= 0 {
 		return errors.New("Replication factor should be > 0")
 	}
-	return s.createRealmInternal(realm, publicKeyString, replicationFactor, nil, token)
+	return s.createRealmInternal(realm, publicKeyString, replicationFactor, nil)
 }
 
 // CreateRealmWithDatacenterReplication creates a new Realm in the Cluster with a custom,
 // per-datacenter Replication Factor. Both replicationClass and datacenterReplicationFactors must be provided.
 func (s *HousekeepingService) CreateRealmWithDatacenterReplication(realm string, publicKeyString string,
-	datacenterReplicationFactors map[string]int, token string) error {
-	return s.createRealmInternal(realm, publicKeyString, 0, datacenterReplicationFactors, token)
+	datacenterReplicationFactors map[string]int) error {
+	return s.createRealmInternal(realm, publicKeyString, 0, datacenterReplicationFactors)
 }
 
 func (s *HousekeepingService) createRealmInternal(realm string, publicKeyString string, replicationFactor int,
-	datacenterReplicationFactors map[string]int, token string) error {
+	datacenterReplicationFactors map[string]int) error {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, "/v1/realms")
 
@@ -105,5 +105,5 @@ func (s *HousekeepingService) createRealmInternal(realm string, publicKeyString 
 		requestBody["datacenter_replication_factors"] = datacenterReplicationFactors
 	}
 
-	return s.client.genericJSONDataAPIPost(callURL.String(), requestBody, token, 201)
+	return s.client.genericJSONDataAPIPost(callURL.String(), requestBody, 201)
 }

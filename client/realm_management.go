@@ -1,4 +1,4 @@
-// Copyright © 2019 Ispirata Srl
+// Copyright © 2019-2020 Ispirata Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ type RealmManagementService struct {
 }
 
 // ListInterfaces returns all interfaces in a Realm.
-func (s *RealmManagementService) ListInterfaces(realm string, token string) ([]string, error) {
+func (s *RealmManagementService) ListInterfaces(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -48,10 +48,10 @@ func (s *RealmManagementService) ListInterfaces(realm string, token string) ([]s
 }
 
 // ListInterfaceMajorVersions returns all available major versions for a given Interface in a Realm.
-func (s *RealmManagementService) ListInterfaceMajorVersions(realm string, interfaceName string, token string) ([]int, error) {
+func (s *RealmManagementService) ListInterfaceMajorVersions(realm string, interfaceName string) ([]int, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s", realm, interfaceName))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,10 @@ func (s *RealmManagementService) ListInterfaceMajorVersions(realm string, interf
 }
 
 // GetInterface returns an interface, identified by a Major version, in a Realm
-func (s *RealmManagementService) GetInterface(realm string, interfaceName string, interfaceMajor int, token string) (interfaces.AstarteInterface, error) {
+func (s *RealmManagementService) GetInterface(realm string, interfaceName string, interfaceMajor int) (interfaces.AstarteInterface, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return interfaces.AstarteInterface{}, err
 	}
@@ -86,31 +86,31 @@ func (s *RealmManagementService) GetInterface(realm string, interfaceName string
 }
 
 // InstallInterface installs a new major version of an Interface into the Realm
-func (s *RealmManagementService) InstallInterface(realm string, interfacePayload interfaces.AstarteInterface, token string) error {
+func (s *RealmManagementService) InstallInterface(realm string, interfacePayload interfaces.AstarteInterface) error {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces", realm))
-	return s.client.genericJSONDataAPIPost(callURL.String(), interfacePayload, token, 201)
+	return s.client.genericJSONDataAPIPost(callURL.String(), interfacePayload, 201)
 }
 
 // DeleteInterface deletes a draft Interface from the Realm
-func (s *RealmManagementService) DeleteInterface(realm string, interfaceName string, interfaceMajor int, token string) error {
+func (s *RealmManagementService) DeleteInterface(realm string, interfaceName string, interfaceMajor int) error {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
-	return s.client.genericJSONDataAPIDelete(callURL.String(), token, 204)
+	return s.client.genericJSONDataAPIDelete(callURL.String(), 204)
 }
 
 // UpdateInterface updates an existing major version of an Interface to a new minor.
-func (s *RealmManagementService) UpdateInterface(realm string, interfaceName string, interfaceMajor int, interfacePayload interfaces.AstarteInterface, token string) error {
+func (s *RealmManagementService) UpdateInterface(realm string, interfaceName string, interfaceMajor int, interfacePayload interfaces.AstarteInterface) error {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
-	return s.client.genericJSONDataAPIPut(callURL.String(), interfacePayload, token, 204)
+	return s.client.genericJSONDataAPIPut(callURL.String(), interfacePayload, 204)
 }
 
 // ListTriggers returns all triggers in a Realm.
-func (s *RealmManagementService) ListTriggers(realm string, token string) ([]string, error) {
+func (s *RealmManagementService) ListTriggers(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +126,10 @@ func (s *RealmManagementService) ListTriggers(realm string, token string) ([]str
 }
 
 // GetTrigger returns a trigger installed in a Realm
-func (s *RealmManagementService) GetTrigger(realm string, triggerName string, token string) (map[string]interface{}, error) {
+func (s *RealmManagementService) GetTrigger(realm string, triggerName string) (map[string]interface{}, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers/%s", realm, triggerName))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), token, 200)
+	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
@@ -145,15 +145,15 @@ func (s *RealmManagementService) GetTrigger(realm string, triggerName string, to
 }
 
 // InstallTrigger installs a Trigger into the Realm
-func (s *RealmManagementService) InstallTrigger(realm string, triggerPayload interface{}, token string) error {
+func (s *RealmManagementService) InstallTrigger(realm string, triggerPayload interface{}) error {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers", realm))
-	return s.client.genericJSONDataAPIPost(callURL.String(), triggerPayload, token, 201)
+	return s.client.genericJSONDataAPIPost(callURL.String(), triggerPayload, 201)
 }
 
 // DeleteTrigger deletes a Trigger from the Realm
-func (s *RealmManagementService) DeleteTrigger(realm string, triggerName string, token string) error {
+func (s *RealmManagementService) DeleteTrigger(realm string, triggerName string) error {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers/%s", realm, triggerName))
-	return s.client.genericJSONDataAPIDelete(callURL.String(), token, 204)
+	return s.client.genericJSONDataAPIDelete(callURL.String(), 204)
 }
