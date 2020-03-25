@@ -28,7 +28,7 @@ type HousekeepingService struct {
 }
 
 // ListRealms returns all realms in the cluster.
-func (s *HousekeepingService) ListRealms(token string) ([]string, error) {
+func (s *HousekeepingService) ListRealms() ([]string, error) {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, "/v1/realms")
 	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
