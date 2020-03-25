@@ -21,7 +21,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// GenerateAstarteJWTFromKeyFile generates an Astarte Token for a specific API out of a Private Key File
+// GenerateAstarteJWTFromKeyFile generates an Astarte Token for a specific API out of a Private Key File.
+// servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
+// a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
 func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[AstarteService][]string,
 	ttlSeconds int64) (jwtString string, err error) {
 	keyPEM, err := ioutil.ReadFile(privateKeyFile)
@@ -32,7 +34,9 @@ func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[
 	return GenerateAstarteJWTFromPEMKey(keyPEM, servicesAndClaims, ttlSeconds)
 }
 
-// GenerateAstarteJWTFromPEMKey generates an Astarte Token for a specific API out of a Private Key PEM bytearray
+// GenerateAstarteJWTFromPEMKey generates an Astarte Token for a specific API out of a Private Key PEM bytearray.
+// servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
+// a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
 func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[AstarteService][]string,
 	ttlSeconds int64) (jwtString string, err error) {
 	key, err := jwt.ParseRSAPrivateKeyFromPEM(privateKeyPEM)
