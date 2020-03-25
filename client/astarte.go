@@ -96,9 +96,8 @@ func NewClient(rawBaseURL string, httpClient *http.Client) (*Client, error) {
 }
 
 // NewClientWithIndividualURLs creates a new Astarte API client with custom URL hierarchies.
-// If an empty string is passed as one of the URLs, the corresponding Service will not be instantiated.
-func NewClientWithIndividualURLs(rawAppEngineURL string, rawHousekeepingURL string, rawPairingURL string,
-	rawRealmManagementURL string, httpClient *http.Client) (*Client, error) {
+// Only services added in the individualURLs map will be instantiated - the others will be nil
+func NewClientWithIndividualURLs(individualURLs map[misc.AstarteService]string, httpClient *http.Client) (*Client, error) {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Timeout: time.Second * 30,
@@ -107,36 +106,23 @@ func NewClientWithIndividualURLs(rawAppEngineURL string, rawHousekeepingURL stri
 
 	c := &Client{httpClient: httpClient, baseURL: nil, UserAgent: userAgent}
 
-	if rawAppEngineURL != "" {
-		appEngineURL, err := url.Parse(rawAppEngineURL)
+	for k, v := range individualURLs {
+		// Parse URL
+		parsedURL, err := url.Parse(v)
 		if err != nil {
 			return nil, err
 		}
-		c.AppEngine = &AppEngineService{client: c, appEngineURL: appEngineURL}
-	}
 
-	if rawHousekeepingURL != "" {
-		housekeepingURL, err := url.Parse(rawHousekeepingURL)
-		if err != nil {
-			return nil, err
+		switch k {
+		case misc.AppEngine:
+			c.AppEngine = &AppEngineService{client: c, appEngineURL: parsedURL}
+		case misc.Housekeeping:
+			c.Housekeeping = &HousekeepingService{client: c, housekeepingURL: parsedURL}
+		case misc.Pairing:
+			c.Pairing = &PairingService{client: c, pairingURL: parsedURL}
+		case misc.RealmManagement:
+			c.RealmManagement = &RealmManagementService{client: c, realmManagementURL: parsedURL}
 		}
-		c.Housekeeping = &HousekeepingService{client: c, housekeepingURL: housekeepingURL}
-	}
-
-	if rawPairingURL != "" {
-		pairingURL, err := url.Parse(rawPairingURL)
-		if err != nil {
-			return nil, err
-		}
-		c.Pairing = &PairingService{client: c, pairingURL: pairingURL}
-	}
-
-	if rawRealmManagementURL != "" {
-		realmManagementURL, err := url.Parse(rawRealmManagementURL)
-		if err != nil {
-			return nil, err
-		}
-		c.RealmManagement = &RealmManagementService{client: c, realmManagementURL: realmManagementURL}
 	}
 
 	return c, nil
