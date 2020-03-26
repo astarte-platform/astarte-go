@@ -142,17 +142,17 @@ func errorFromJSONErrors(responseBody io.Reader) error {
 	return fmt.Errorf("%s", errJSON)
 }
 
-// SetTokenFromPrivateKey generates a token from the supplied private key and uses it for the session.
+// SetTokenFromPrivateKeyFile generates a token from the supplied private key file and uses it for the session.
 // The token will have complete API access and won't expire. To limit this behavior, either use
-// SetTokenFromPrivateKeyWithTTL or SetTokenFromPrivateKeyWithClaims
-func (c *Client) SetTokenFromPrivateKey(privateKeyFile string) error {
-	return c.SetTokenFromPrivateKeyWithTTL(privateKeyFile, 0)
+// SetTokenFromPrivateKeyFileWithTTL or SetTokenFromPrivateKeyFileWithClaims
+func (c *Client) SetTokenFromPrivateKeyFile(privateKeyFile string) error {
+	return c.SetTokenFromPrivateKeyFileWithTTL(privateKeyFile, 0)
 }
 
-// SetTokenFromPrivateKeyWithTTL generates a token from the supplied private key and uses it for the session.
+// SetTokenFromPrivateKeyFileWithTTL generates a token from the supplied private key file and uses it for the session.
 // The token will have complete API access and will expire in `ttlSeconds`. To further limit this behavior,
-// use SetTokenFromPrivateKeyWithClaims
-func (c *Client) SetTokenFromPrivateKeyWithTTL(privateKeyFile string, ttlSeconds int64) error {
+// use SetTokenFromPrivateKeyFileWithClaims
+func (c *Client) SetTokenFromPrivateKeyFileWithTTL(privateKeyFile string, ttlSeconds int64) error {
 	// Add all types
 	servicesAndClaims := map[misc.AstarteService][]string{
 		misc.AppEngine:       []string{},
@@ -161,14 +161,44 @@ func (c *Client) SetTokenFromPrivateKeyWithTTL(privateKeyFile string, ttlSeconds
 		misc.Pairing:         []string{},
 		misc.RealmManagement: []string{},
 	}
-	return c.SetTokenFromPrivateKeyWithClaims(privateKeyFile, servicesAndClaims, ttlSeconds)
+	return c.SetTokenFromPrivateKeyFileWithClaims(privateKeyFile, servicesAndClaims, ttlSeconds)
+}
+
+// SetTokenFromPrivateKeyFileWithClaims generates a token from the supplied private key file and uses it for the session.
+// The token will have API access defined by the `servicesAndClaims` scope and will expire in `ttlSeconds`
+func (c *Client) SetTokenFromPrivateKeyFileWithClaims(privateKeyFile string, servicesAndClaims map[misc.AstarteService][]string, ttlSeconds int64) error {
+	var err error
+	c.token, err = misc.GenerateAstarteJWTFromKeyFile(privateKeyFile, servicesAndClaims, ttlSeconds)
+	return err
+}
+
+// SetTokenFromPrivateKey generates a token from the supplied private key and uses it for the session.
+// The token will have complete API access and won't expire. To limit this behavior, either use
+// SetTokenFromPrivateKeyWithTTL or SetTokenFromPrivateKeyWithClaims
+func (c *Client) SetTokenFromPrivateKey(privateKey []byte) error {
+	return c.SetTokenFromPrivateKeyWithTTL(privateKey, 0)
+}
+
+// SetTokenFromPrivateKeyWithTTL generates a token from the supplied private key and uses it for the session.
+// The token will have complete API access and will expire in `ttlSeconds`. To further limit this behavior,
+// use SetTokenFromPrivateKeyWithClaims
+func (c *Client) SetTokenFromPrivateKeyWithTTL(privateKey []byte, ttlSeconds int64) error {
+	// Add all types
+	servicesAndClaims := map[misc.AstarteService][]string{
+		misc.AppEngine:       []string{},
+		misc.Channels:        []string{},
+		misc.Housekeeping:    []string{},
+		misc.Pairing:         []string{},
+		misc.RealmManagement: []string{},
+	}
+	return c.SetTokenFromPrivateKeyWithClaims(privateKey, servicesAndClaims, ttlSeconds)
 }
 
 // SetTokenFromPrivateKeyWithClaims generates a token from the supplied private key and uses it for the session.
 // The token will have API access defined by the `servicesAndClaims` scope and will expire in `ttlSeconds`
-func (c *Client) SetTokenFromPrivateKeyWithClaims(privateKeyFile string, servicesAndClaims map[misc.AstarteService][]string, ttlSeconds int64) error {
+func (c *Client) SetTokenFromPrivateKeyWithClaims(privateKey []byte, servicesAndClaims map[misc.AstarteService][]string, ttlSeconds int64) error {
 	var err error
-	c.token, err = misc.GenerateAstarteJWTFromKeyFile(privateKeyFile, servicesAndClaims, ttlSeconds)
+	c.token, err = misc.GenerateAstarteJWTFromPEMKey(privateKey, servicesAndClaims, ttlSeconds)
 	return err
 }
 
