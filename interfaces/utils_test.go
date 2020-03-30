@@ -15,7 +15,10 @@
 package interfaces
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -172,7 +175,7 @@ func TestAggregateMessageValidation(t *testing.T) {
 	if err := ValidateInterfacePath(i, "/sensors/testSensor/name"); err != nil {
 		t.Error(err)
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/name": "test"}); err != nil {
+	if err := ValidateAggregateMessage(i, "/sensors/testSensor", map[string]interface{}{"name": "test"}); err != nil {
 		t.Error(err)
 	}
 
@@ -230,7 +233,7 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 	if err := ValidateInterfacePath(i, "/sensors/testSensor/names"); err == nil {
 		t.Fail()
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/names": "check"}); err == nil {
+	if err := ValidateAggregateMessage(i, "/sensors/testSensor", map[string]interface{}{"names": "check"}); err == nil {
 		t.Fail()
 	}
 	if _, err := InterfaceMappingFromPath(i, "/sensors/testSensor/names"); err == nil {
@@ -492,5 +495,81 @@ func TestFailedTypeValidation(t *testing.T) {
 	}
 	if err := ValidateIndividualMessage(i, "/stringValue", 42); err == nil {
 		t.Fail()
+	}
+}
+
+func TestPayloadNormalization(t *testing.T) {
+	byteArray := []byte{'a', 's', 't', 'a', 'r', 't', 'e'}
+	if NormalizePayload(byteArray, true).(string) != base64.StdEncoding.EncodeToString(byteArray) {
+		t.Error("Base64 matching in normalization failed")
+	}
+	if !bytes.Equal(NormalizePayload(byteArray, false).([]byte), byteArray) {
+		t.Error("Base64 matching in normalization failed")
+	}
+
+	timestamp := time.Now()
+	loc, err := time.LoadLocation("Europe/Rome")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if NormalizePayload(timestamp.In(loc), true) != timestamp.UTC() {
+		t.Error("Time conversion failed", timestamp.In(loc), timestamp.UTC())
+	}
+
+	inMap := map[string]time.Time{"testTime": timestamp.In(loc)}
+	outMap := map[string]interface{}{"testTime": timestamp.UTC()}
+
+	if !reflect.DeepEqual(NormalizePayload(inMap, true), outMap) {
+		t.Error("Map conversion failed", NormalizePayload(inMap, true), outMap)
+	}
+
+	inInterfaceMap := map[string]interface{}{"testTime": timestamp.In(loc)}
+
+	if !reflect.DeepEqual(NormalizePayload(inInterfaceMap, true), outMap) {
+		t.Error("Map conversion failed", NormalizePayload(inInterfaceMap, true), outMap)
+	}
+
+	inSlice := [][]byte{byteArray}
+	outSlice := []string{base64.StdEncoding.EncodeToString(byteArray)}
+
+	if !reflect.DeepEqual(NormalizePayload(inSlice, true), outSlice) {
+		t.Error("Slice conversion failed", NormalizePayload(inSlice, true), outSlice)
+	}
+
+	inInterfaceSlice := []interface{}{byteArray}
+	outInterfaceSlice := []interface{}{base64.StdEncoding.EncodeToString(byteArray)}
+
+	if !reflect.DeepEqual(NormalizePayload(inInterfaceSlice, true), outInterfaceSlice) {
+		t.Error("Slice conversion failed", NormalizePayload(inInterfaceSlice, true), outInterfaceSlice)
+	}
+
+	inMultiMap := map[string]interface{}{
+		"testTime":            timestamp.In(loc),
+		"testBytearray":       byteArray,
+		"testNestedBytearray": [][]byte{byteArray},
+		"testString":          "test",
+		"testStringArray":     []string{"test"},
+	}
+	outMultiMapEncoded := map[string]interface{}{
+		"testTime":            timestamp.UTC(),
+		"testBytearray":       base64.StdEncoding.EncodeToString(byteArray),
+		"testNestedBytearray": []string{base64.StdEncoding.EncodeToString(byteArray)},
+		"testString":          "test",
+		"testStringArray":     []interface{}{"test"},
+	}
+	outMultiMapNonEncoded := map[string]interface{}{
+		"testTime":            timestamp.UTC(),
+		"testBytearray":       byteArray,
+		"testNestedBytearray": [][]byte{byteArray},
+		"testString":          "test",
+		"testStringArray":     []interface{}{"test"},
+	}
+
+	if !reflect.DeepEqual(NormalizePayload(inMultiMap, true), outMultiMapEncoded) {
+		t.Error("Multimap conversion failed", NormalizePayload(inMultiMap, true), outMultiMapEncoded)
+	}
+	if !reflect.DeepEqual(NormalizePayload(inMultiMap, false), outMultiMapNonEncoded) {
+		t.Error("Multimap conversion failed", NormalizePayload(inMultiMap, false), outMultiMapNonEncoded)
 	}
 }

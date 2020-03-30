@@ -16,11 +16,14 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
+	"reflect"
 	"time"
 
+	"github.com/astarte-platform/astarte-go/interfaces"
 	"github.com/iancoleman/orderedmap"
 )
 
@@ -123,6 +126,77 @@ func (s *AppEngineService) GetLastAggregateDatastreams(realm, deviceIdentifier s
 func (s *AppEngineService) GetAggregateDatastreamsTimeWindow(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time) ([]DatastreamAggregateValue, error) {
 	return s.aggregateDatastreamQuery(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType,
 		fmt.Sprintf("since=%s&to=%s", since.UTC().Format(time.RFC3339Nano), to.UTC().Format(time.RFC3339Nano)))
+}
+
+//////////
+// Sending functions: these ones are meant to send data
+//////////
+
+// SendData sends data to the specified astarteInterface. It performs all validity checks on the Interface object before moving forward
+// with the operation, as such it is assumed that the operation will be always validated on the client side. If you have access to a native
+// Interface object, accessing this method rather than the lower level ones is advised.
+// payload must match a compatible type for the Interface path. In case of an aggregate interface, payload *must* be a
+// map[string]interface{}, and each payload will be individually checked
+func (s *AppEngineService) SendData(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
+	astarteInterface interfaces.AstarteInterface, interfacePath string, payload interface{}) error {
+	// Perform a set of checks depending on the interface structure
+	switch {
+	case astarteInterface.Ownership == interfaces.DeviceOwnership:
+		return errors.New("cannot send data to device-owned interfaces")
+	case astarteInterface.Type == interfaces.PropertiesType, astarteInterface.Aggregation == interfaces.IndividualAggregation:
+		// In this case, validate the individual message
+		if err := interfaces.ValidateIndividualMessage(astarteInterface, interfacePath, payload); err != nil {
+			return err
+		}
+	case astarteInterface.Aggregation == interfaces.ObjectAggregation:
+		aggregatePayload, ok := payload.(map[string]interface{})
+		if !ok {
+			return errors.New("payload must be a map[string]interface{}")
+		}
+		if err := interfaces.ValidateAggregateMessage(astarteInterface, interfacePath, aggregatePayload); err != nil {
+			return err
+		}
+	}
+
+	// If we got here, it's time to do the right thing.
+	switch {
+	case astarteInterface.Type == interfaces.PropertiesType:
+		return s.SetProperty(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
+	case astarteInterface.Aggregation == interfaces.IndividualAggregation:
+		return s.SendDatastream(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
+	case astarteInterface.Aggregation == interfaces.ObjectAggregation:
+		return s.SendAggregateDatastream(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
+	}
+
+	// We should never get here
+	return errors.New("internal error")
+}
+
+// SendDatastream sends a datastream to the given interface without additional checks.
+// payload must be of a type compatible with the interface's endpoint. Any errors will be returned on the server side or
+// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
+func (s *AppEngineService) SendDatastream(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
+	if reflect.TypeOf(payload).Kind() == reflect.Map {
+		return errors.New("payload must not be a map")
+	}
+	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "POST")
+}
+
+// SendAggregateDatastream sends an aggregate datastream to the given interface without additional checks.
+// payload must be a map. Any errors will be returned on the server side or
+// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
+func (s *AppEngineService) SendAggregateDatastream(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
+	if reflect.TypeOf(payload).Kind() != reflect.Map {
+		return errors.New("payload must be a map")
+	}
+	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "POST")
+}
+
+// SetProperty sets a property on the given interface without additional checks. payload must be of a type
+// compatible with the interface's endpoint Any errors will be returned on the server side or
+// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
+func (s *AppEngineService) SetProperty(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
+	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "PUT")
 }
 
 //////////
@@ -237,4 +311,14 @@ func (s *AppEngineService) getDatastreamPaginatorInternal(realm, deviceIdentifie
 		resultSetOrder: resultSetOrder,
 	}
 	return datastreamPaginator, nil
+}
+
+func (s *AppEngineService) performSendRequest(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}, method string) error {
+	url, err := s.appengineGenericJSONDataAPIURL(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType, "")
+	if err != nil {
+		return err
+	}
+
+	// Normalize payload encoding bytes, given we're using JSON
+	return s.client.genericJSONDataAPIWriteNoResponse(method, url.String(), interfaces.NormalizePayload(payload, true), 200)
 }

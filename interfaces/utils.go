@@ -15,16 +15,24 @@
 package interfaces
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"path"
+	"reflect"
 	"strings"
 	"time"
 )
 
-// ValidateAggregateMessage validates an aggregate message
-func ValidateAggregateMessage(astarteInterface AstarteInterface, values map[string]interface{}) error {
+// ValidateAggregateMessage validates an aggregate message prepended by a path.
+// values must be a map containing the last tip of the endpoint, without slashes
+func ValidateAggregateMessage(astarteInterface AstarteInterface, interfacePath string, values map[string]interface{}) error {
 	for k, v := range values {
-		// Validate the individual message
-		if err := ValidateIndividualMessage(astarteInterface, k, v); err != nil {
+		if strings.Contains(k, "/") {
+			return errors.New("values must contain keys without slash")
+		}
+		// Create a valid path to be fed to ValidateIndividualMessage
+		if err := ValidateIndividualMessage(astarteInterface, path.Join(interfacePath, k), v); err != nil {
 			return err
 		}
 	}
@@ -144,6 +152,62 @@ func InterfaceMappingFromPath(astarteInterface AstarteInterface, interfacePath s
 func ValidateInterfacePath(astarteInterface AstarteInterface, interfacePath string) error {
 	_, err := InterfaceMappingFromPath(astarteInterface, interfacePath)
 	return err
+}
+
+// NormalizePayload returns a normalized payload, ready to be used for calling APIs or, in general, interact with
+// Astarte. encodeBytes controls whether []byte types should be encoded in base64, used for data structures which do not
+// support bytes (e.g.: JSON)
+func NormalizePayload(payload interface{}, encodeBytes bool) interface{} {
+	// Normalize payload as much as possible. In particular, we want to send base64 data in case we're dealing with a bytearray,
+	// and ensure time is always UTC
+	switch v := payload.(type) {
+	case []byte:
+		if encodeBytes {
+			payload = base64.StdEncoding.EncodeToString(v)
+		}
+	case [][]byte:
+		if encodeBytes {
+			newSlice := []string{}
+			for _, entry := range v {
+				newSlice = append(newSlice, base64.StdEncoding.EncodeToString(entry))
+			}
+			payload = newSlice
+		}
+	case time.Time:
+		payload = v.UTC()
+	case *time.Time:
+		payload = v.UTC()
+	default:
+		// Otherwise, use reflection to understand whether we're dealing with a Map or
+		// a Slice. If so, recurse and normalize all of it.
+		switch v := reflect.ValueOf(payload); v.Kind() {
+		case reflect.Map:
+			// Create a reflect Map for map[string]interface{}. This because type conversions might happen
+			// e.g.: []byte -> string
+			targetType := map[string]interface{}{}
+			copy := reflect.New(reflect.TypeOf(targetType)).Elem()
+			copy.Set(reflect.MakeMap(reflect.TypeOf(targetType)))
+			for _, key := range v.MapKeys() {
+				originalValue := v.MapIndex(key)
+				// Normalize inner value
+				normalizedValue := reflect.ValueOf(NormalizePayload(originalValue.Interface(), encodeBytes))
+				copy.SetMapIndex(key, normalizedValue)
+			}
+			payload = copy.Interface()
+		case reflect.Slice:
+			// Create a reflect Slice for []interface{}. This because type conversions might happen
+			// e.g.: []byte -> string
+			targetType := []interface{}{}
+			copy := reflect.New(reflect.TypeOf(targetType)).Elem()
+			copy.Set(reflect.MakeSlice(reflect.TypeOf(targetType), v.Len(), v.Cap()))
+			for i := 0; i < v.Len(); i++ {
+				copy.Index(i).Set(reflect.ValueOf(NormalizePayload(v.Index(i).Interface(), encodeBytes)))
+			}
+			payload = copy.Interface()
+		}
+	}
+
+	return payload
 }
 
 func simpleMappingValidation(astarteInterface AstarteInterface, interfacePath string) (AstarteInterfaceMapping, error) {
