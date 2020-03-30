@@ -15,16 +15,22 @@
 package interfaces
 
 import (
+	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 )
 
-// ValidateAggregateMessage validates an aggregate message
-func ValidateAggregateMessage(astarteInterface AstarteInterface, values map[string]interface{}) error {
+// ValidateAggregateMessage validates an aggregate message prepended by a path.
+// values must be a map containing the last tip of the endpoint, without slashes
+func ValidateAggregateMessage(astarteInterface AstarteInterface, interfacePath string, values map[string]interface{}) error {
 	for k, v := range values {
-		// Validate the individual message
-		if err := ValidateIndividualMessage(astarteInterface, k, v); err != nil {
+		if strings.Contains(k, "/") {
+			return errors.New("values must contain keys without slash")
+		}
+		// Create a valid path to be fed to ValidateIndividualMessage
+		if err := ValidateIndividualMessage(astarteInterface, path.Join(interfacePath, k), v); err != nil {
 			return err
 		}
 	}

@@ -172,7 +172,7 @@ func TestAggregateMessageValidation(t *testing.T) {
 	if err := ValidateInterfacePath(i, "/sensors/testSensor/name"); err != nil {
 		t.Error(err)
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/name": "test"}); err != nil {
+	if err := ValidateAggregateMessage(i, "/sensors/testSensor", map[string]interface{}{"name": "test"}); err != nil {
 		t.Error(err)
 	}
 
@@ -230,7 +230,7 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 	if err := ValidateInterfacePath(i, "/sensors/testSensor/names"); err == nil {
 		t.Fail()
 	}
-	if err := ValidateAggregateMessage(i, map[string]interface{}{"/sensors/testSensor/names": "check"}); err == nil {
+	if err := ValidateAggregateMessage(i, "/sensors/testSensor", map[string]interface{}{"names": "check"}); err == nil {
 		t.Fail()
 	}
 	if _, err := InterfaceMappingFromPath(i, "/sensors/testSensor/names"); err == nil {
