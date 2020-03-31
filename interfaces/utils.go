@@ -305,5 +305,5 @@ func validateType(mappingType AstarteMappingType, value interface{}) error {
 		}
 	}
 
-	return fmt.Errorf("Value for mapping does not match type restrictions for %s", mappingType.String())
+	return fmt.Errorf("Value for mapping does not match type restrictions for %s", mappingType)
 }

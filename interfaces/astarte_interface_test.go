@@ -38,7 +38,7 @@ func TestParsing(t *testing.T) {
 				"doc": "An arbitrary sensor name.",
 				"retention": "discard",
 				"reliability": "unreliable",
-				"database_retention_policy": "ttl",
+				"database_retention_policy": "use_ttl",
 				"database_retention_ttl": 200
 			},
 			{

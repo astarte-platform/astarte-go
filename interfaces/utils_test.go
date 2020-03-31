@@ -42,7 +42,7 @@ func TestMessageValidation(t *testing.T) {
 				"doc": "An arbitrary sensor name.",
 				"retention": "discard",
 				"reliability": "unreliable",
-				"database_retention_policy": "ttl",
+				"database_retention_policy": "use_ttl",
 				"database_retention_ttl": 200
 			},
 			{
@@ -97,7 +97,7 @@ func TestParametricMessageWrongPaths(t *testing.T) {
 				"doc": "An arbitrary sensor name.",
 				"retention": "discard",
 				"reliability": "unreliable",
-				"database_retention_policy": "ttl",
+				"database_retention_policy": "use_ttl",
 				"database_retention_ttl": 200
 			},
 			{
@@ -155,7 +155,7 @@ func TestAggregateMessageValidation(t *testing.T) {
 				"doc": "An arbitrary sensor name.",
 				"retention": "discard",
 				"reliability": "unreliable",
-				"database_retention_policy": "ttl",
+				"database_retention_policy": "use_ttl",
 				"database_retention_ttl": 200
 			},
 			{
@@ -210,7 +210,7 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 				"doc": "An arbitrary sensor name.",
 				"retention": "discard",
 				"reliability": "unreliable",
-				"database_retention_policy": "ttl",
+				"database_retention_policy": "use_ttl",
 				"database_retention_ttl": 200
 			},
 			{
