@@ -27,7 +27,6 @@ func TestParsing(t *testing.T) {
 		"version_minor": 1,
 		"type": "properties",
 		"ownership": "device",
-		"aggregation": "individual",
 		"description": "Describes available generic sensors.",
 		"doc": "This interface allows to describe available sensors and their attributes such as name and sampled data measurement unit. Sensors are identified by their sensor_id. See also org.astarte-platform.genericsensors.AvailableSensors.",
 		"mappings": [
@@ -50,9 +49,18 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	i := &AstarteInterface{}
-	if err := json.Unmarshal([]byte(validInterface), i); err != nil {
+	i, err := ParseInterfaceFromString(validInterface)
+	if err != nil {
 		t.Error(err)
+	}
+	if i.Aggregation != IndividualAggregation {
+		t.Error("Wrong aggregation detected", i.Aggregation)
+	}
+	if i.Mappings[0].Retention != DiscardRetention {
+		t.Error("Wrong retention detected", i.Mappings[0].Retention)
+	}
+	if i.Mappings[1].Retention != DiscardRetention {
+		t.Error("Wrong retention detected", i.Mappings[0].Retention)
 	}
 }
 
@@ -116,8 +124,7 @@ func TestFailedTypeParsing(t *testing.T) {
 		]
 	}`
 
-	i := &AstarteInterface{}
-	if err := json.Unmarshal([]byte(validInterface), i); err == nil {
+	if _, err := ParseInterfaceFromString(validInterface); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -146,8 +153,7 @@ func TestFailedStructureParsing(t *testing.T) {
 		]
 	}`
 
-	i := &AstarteInterface{}
-	if err := json.Unmarshal([]byte(validInterface), i); err == nil {
+	if _, err := ParseInterfaceFromString(validInterface); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -176,8 +182,7 @@ func TestFailedMarshalingParsing(t *testing.T) {
 		]
 	}`
 
-	i := &AstarteInterface{}
-	if err := json.Unmarshal([]byte(validInterface), i); err == nil {
+	if _, err := ParseInterfaceFromString(validInterface); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -208,8 +213,7 @@ func TestFailedOwnershipParsing(t *testing.T) {
 		]
 	}`
 
-	i := &AstarteInterface{}
-	if err := json.Unmarshal([]byte(validInterface), i); err == nil {
+	if _, err := ParseInterfaceFromString(validInterface); err == nil {
 		t.Error(err)
 	}
 }
