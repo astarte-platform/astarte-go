@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 )
 
@@ -113,14 +114,9 @@ func (a *AstarteInterfaceAggregation) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	// Note that if the string is empty then it will be set to 'IndividualAggregation'
-	if j == "" {
-		*a = IndividualAggregation
-	} else {
-		*a = AstarteInterfaceAggregation(j)
-		if err := a.IsValid(); err != nil {
-			return fmt.Errorf("'%v' is not a valid Astarte Interface Aggregation", j)
-		}
+	*a = AstarteInterfaceAggregation(j)
+	if err := a.IsValid(); err != nil {
+		return fmt.Errorf("'%v' is not a valid Astarte Interface Aggregation", j)
 	}
 	return nil
 }
@@ -153,14 +149,9 @@ func (r *AstarteMappingReliability) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	// Note that if the string is empty then it will be set to 'UnreliableReliability'
-	if j == "" {
-		*r = UnreliableReliability
-	} else {
-		*r = AstarteMappingReliability(j)
-		if err := r.IsValid(); err != nil {
-			return fmt.Errorf("'%v' is not a valid Astarte Mapping Reliability", j)
-		}
+	*r = AstarteMappingReliability(j)
+	if err := r.IsValid(); err != nil {
+		return fmt.Errorf("'%v' is not a valid Astarte Mapping Reliability", j)
 	}
 	return nil
 }
@@ -193,14 +184,9 @@ func (r *AstarteMappingRetention) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	// Note that if the string is empty then it will be set to 'DiscardRetention'
-	if j == "" {
-		*r = DiscardRetention
-	} else {
-		*r = AstarteMappingRetention(j)
-		if err := r.IsValid(); err != nil {
-			return fmt.Errorf("'%v' is not a valid Astarte Mapping Retention", j)
-		}
+	*r = AstarteMappingRetention(j)
+	if err := r.IsValid(); err != nil {
+		return fmt.Errorf("'%v' is not a valid Astarte Mapping Retention", j)
 	}
 	return nil
 }
@@ -231,14 +217,9 @@ func (r *AstarteMappingDatabaseRetentionPolicy) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	// Note that if the string is empty then it will be set to 'NoTTL'
-	if j == "" {
-		*r = NoTTL
-	} else {
-		*r = AstarteMappingDatabaseRetentionPolicy(j)
-		if err := r.IsValid(); err != nil {
-			return fmt.Errorf("'%v' is not a valid Astarte Mapping Database Retention Policy", j)
-		}
+	*r = AstarteMappingDatabaseRetentionPolicy(j)
+	if err := r.IsValid(); err != nil {
+		return fmt.Errorf("'%v' is not a valid Astarte Mapping Database Retention Policy", j)
 	}
 	return nil
 }
@@ -338,6 +319,59 @@ type AstarteInterface struct {
 	Description       string                      `json:"description,omitempty"`
 	Documentation     string                      `json:"doc,omitempty"`
 	Mappings          []AstarteInterfaceMapping   `json:"mappings"`
+}
+
+// ParseInterfaceFromFile is a convenience function to call ParseInterface with a file as input
+func ParseInterfaceFromFile(interfaceFile string) (AstarteInterface, error) {
+	b, err := ioutil.ReadFile(interfaceFile)
+	if err != nil {
+		return AstarteInterface{}, err
+	}
+	return ParseInterface(b)
+}
+
+// ParseInterfaceFromString is a convenience function to call ParseInterface with a string as input
+func ParseInterfaceFromString(interfaceContent string) (AstarteInterface, error) {
+	return ParseInterface([]byte(interfaceContent))
+}
+
+// ParseInterface parses an interface from a JSON string and returns an AstarteInterface object when successful.
+// Please use this method rather than calling json.Unmarshal on an interface, as this will set any missing field
+// to the correct, expected default value
+func ParseInterface(interfaceContent []byte) (AstarteInterface, error) {
+	astarteInterface := AstarteInterface{}
+	if err := json.Unmarshal(interfaceContent, &astarteInterface); err != nil {
+		return astarteInterface, err
+	}
+
+	return EnsureInterfaceDefaults(astarteInterface), nil
+}
+
+// EnsureInterfaceDefaults makes sure a JSON-parsed interface will have all defaults set. Usually, you should never
+// call this method - ParseInterface does the right thing. It might become useful in case you're dealing with a
+// json.Decoder to parse interface information
+func EnsureInterfaceDefaults(astarteInterface AstarteInterface) AstarteInterface {
+	// Ensure we have all defaults set
+	if err := astarteInterface.Aggregation.IsValid(); err != nil {
+		astarteInterface.Aggregation = IndividualAggregation
+	}
+
+	subsMapping := []AstarteInterfaceMapping{}
+	for _, v := range astarteInterface.Mappings {
+		if err := v.Reliability.IsValid(); err != nil {
+			v.Reliability = UnreliableReliability
+		}
+		if err := v.Retention.IsValid(); err != nil {
+			v.Retention = DiscardRetention
+		}
+		if err := v.DatabaseRetentionPolicy.IsValid(); err != nil {
+			v.DatabaseRetentionPolicy = NoTTL
+		}
+		subsMapping = append(subsMapping, v)
+	}
+	astarteInterface.Mappings = subsMapping
+
+	return astarteInterface
 }
 
 // IsParametric returns whether the interface has at least one parametric mapping

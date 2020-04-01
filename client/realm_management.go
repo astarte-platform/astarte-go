@@ -82,7 +82,7 @@ func (s *RealmManagementService) GetInterface(realm string, interfaceName string
 		return interfaces.AstarteInterface{}, err
 	}
 
-	return responseBody.Data, nil
+	return interfaces.EnsureInterfaceDefaults(responseBody.Data), nil
 }
 
 // InstallInterface installs a new major version of an Interface into the Realm
