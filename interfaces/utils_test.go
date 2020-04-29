@@ -397,7 +397,7 @@ func TestTypeValidation(t *testing.T) {
 	if err := ValidateIndividualMessage(i, "/booleanarrayValue", []bool{true}); err != nil {
 		t.Error(err)
 	}
-	if err := ValidateIndividualMessage(i, "/binaryblobarrayValue", [][]byte{[]byte{'b', 'l', 'o', 'b'}}); err != nil {
+	if err := ValidateIndividualMessage(i, "/binaryblobarrayValue", [][]byte{{'b', 'l', 'o', 'b'}}); err != nil {
 		t.Error(err)
 	}
 	if err := ValidateIndividualMessage(i, "/datetimearrayValue", []time.Time{timestamp}); err != nil {

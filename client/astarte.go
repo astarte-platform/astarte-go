@@ -161,11 +161,11 @@ func (c *Client) SetTokenFromPrivateKeyFile(privateKeyFile string) error {
 func (c *Client) SetTokenFromPrivateKeyFileWithTTL(privateKeyFile string, ttlSeconds int64) error {
 	// Add all types
 	servicesAndClaims := map[misc.AstarteService][]string{
-		misc.AppEngine:       []string{},
-		misc.Channels:        []string{},
-		misc.Housekeeping:    []string{},
-		misc.Pairing:         []string{},
-		misc.RealmManagement: []string{},
+		misc.AppEngine:       {},
+		misc.Channels:        {},
+		misc.Housekeeping:    {},
+		misc.Pairing:         {},
+		misc.RealmManagement: {},
 	}
 	return c.SetTokenFromPrivateKeyFileWithClaims(privateKeyFile, servicesAndClaims, ttlSeconds)
 }
@@ -191,11 +191,11 @@ func (c *Client) SetTokenFromPrivateKey(privateKey []byte) error {
 func (c *Client) SetTokenFromPrivateKeyWithTTL(privateKey []byte, ttlSeconds int64) error {
 	// Add all types
 	servicesAndClaims := map[misc.AstarteService][]string{
-		misc.AppEngine:       []string{},
-		misc.Channels:        []string{},
-		misc.Housekeeping:    []string{},
-		misc.Pairing:         []string{},
-		misc.RealmManagement: []string{},
+		misc.AppEngine:       {},
+		misc.Channels:        {},
+		misc.Housekeeping:    {},
+		misc.Pairing:         {},
+		misc.RealmManagement: {},
 	}
 	return c.SetTokenFromPrivateKeyWithClaims(privateKey, servicesAndClaims, ttlSeconds)
 }

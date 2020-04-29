@@ -81,12 +81,7 @@ func (d *DatastreamPaginator) GetNextPage() ([]DatastreamValue, error) {
 		return nil, err
 	}
 
-	if len(page) < d.pageSize {
-		d.hasNextPage = false
-	} else {
-		d.hasNextPage = true
-		d.nextWindow = page[len(page)-1].Timestamp
-	}
+	d.computePageState(len(page), page[len(page)-1].Timestamp)
 
 	return page, nil
 }
@@ -107,14 +102,18 @@ func (d *DatastreamPaginator) GetNextAggregatePage() ([]DatastreamAggregateValue
 		return nil, err
 	}
 
-	if len(page) < d.pageSize {
+	d.computePageState(len(page), page[len(page)-1].Timestamp)
+
+	return page, nil
+}
+
+func (d *DatastreamPaginator) computePageState(resultLength int, nextWindow time.Time) {
+	if resultLength < d.pageSize {
 		d.hasNextPage = false
 	} else {
 		d.hasNextPage = true
-		d.nextWindow = page[len(page)-1].Timestamp
+		d.nextWindow = nextWindow
 	}
-
-	return page, nil
 }
 
 func (d *DatastreamPaginator) setupCallURL() (*url.URL, error) {

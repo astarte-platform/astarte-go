@@ -84,8 +84,8 @@ func (s *PairingService) GetMQTTv1ProtocolInformationForDevice(realm, deviceID s
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 
-	ret := AstarteMQTTv1ProtocolInformation{}
+	ret := getDeviceProtocolStatusResponse{}
 	err := s.client.genericJSONDataAPIGET(&ret, callURL.String(), 200)
 
-	return ret, err
+	return ret.Protocols.AstarteMQTTv1, err
 }

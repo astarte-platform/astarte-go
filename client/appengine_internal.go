@@ -109,8 +109,7 @@ func parseAggregateDatastreamMap(aMap orderedmap.OrderedMap, completeKeyPath str
 	foundAnything := false
 	for _, key := range aMap.Keys() {
 		val, _ := aMap.Get(key)
-		switch cVal := val.(type) {
-		case orderedmap.OrderedMap:
+		if cVal, ok := val.(orderedmap.OrderedMap); ok {
 			foundAnything = true
 			parsedMap, err := parseAggregateDatastreamMap(cVal, completeKeyPath+"/"+key)
 			if err != nil {
@@ -166,8 +165,7 @@ func parseDatastreamMap(aMap map[string]interface{}, completeKeyPath string) (ma
 
 	foundAnything := false
 	for key, val := range aMap {
-		switch cVal := val.(type) {
-		case map[string]interface{}:
+		if cVal, ok := val.(map[string]interface{}); ok {
 			foundAnything = true
 			parsedMap, err := parseDatastreamMap(cVal, completeKeyPath+"/"+key)
 			if err != nil {
