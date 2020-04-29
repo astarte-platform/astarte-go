@@ -38,21 +38,10 @@ func (s *PairingService) RegisterDevice(realm string, deviceID string) (string, 
 	}
 	requestBody.HwID = deviceID
 
-	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, 201)
-	if err != nil {
-		return "", err
-	}
+	ret := deviceRegistrationResponse{}
+	err := s.client.genericJSONDataAPIPostWithResponse(&ret, callURL.String(), requestBody, 201)
 
-	// Decode the reply
-	var responseBody struct {
-		Data deviceRegistrationResponse `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return "", err
-	}
-
-	return responseBody.Data.CredentialsSecret, nil
+	return ret.CredentialsSecret, err
 }
 
 // UnregisterDevice resets the registration state of a device. This makes it possible to register it again.
@@ -81,21 +70,10 @@ func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, cs
 	}
 	requestBody.CSR = csr
 
-	decoder, err := s.client.genericJSONDataAPIPostWithResponse(callURL.String(), requestBody, 201)
-	if err != nil {
-		return "", err
-	}
+	ret := getMQTTv1CertificateResponse{}
+	err := s.client.genericJSONDataAPIPostWithResponse(&ret, callURL.String(), requestBody, 201)
 
-	// Decode the reply
-	var responseBody struct {
-		Data getMQTTv1CertificateResponse `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return "", err
-	}
-
-	return responseBody.Data.ClientCertificate, nil
+	return ret.ClientCertificate, err
 }
 
 // GetMQTTv1ProtocolInformationForDevice returns protocol information (such as the broker URL) for devices running
@@ -106,19 +84,8 @@ func (s *PairingService) GetMQTTv1ProtocolInformationForDevice(realm, deviceID s
 	callURL, _ := url.Parse(s.pairingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return AstarteMQTTv1ProtocolInformation{}, err
-	}
+	ret := AstarteMQTTv1ProtocolInformation{}
+	err := s.client.genericJSONDataAPIGET(&ret, callURL.String(), 200)
 
-	// Decode the reply
-	var responseBody struct {
-		Data getDeviceProtocolStatusResponse `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return AstarteMQTTv1ProtocolInformation{}, err
-	}
-
-	return responseBody.Data.Protocols.AstarteMQTTv1, nil
+	return ret, err
 }

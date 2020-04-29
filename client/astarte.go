@@ -17,6 +17,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,6 +31,11 @@ import (
 
 const (
 	userAgent = "astarte-go"
+)
+
+// Exported errors
+var (
+	ErrMalformedPayload = errors.New("received an invalid JSONAPI payload")
 )
 
 // Client is the base Astarte API client. It provides access to all of Astarte's APIs.
@@ -208,25 +214,16 @@ func (c *Client) SetToken(token string) {
 	c.token = token
 }
 
-func (c *Client) genericJSONDataAPIGET(urlString string, expectedReturnCode int) (*json.Decoder, error) {
+func (c *Client) genericJSONDataAPIGET(ret interface{}, urlString string, expectedReturnCode int) error {
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Add("Authorization", "Bearer "+c.token)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != expectedReturnCode {
-		return nil, errorFromJSONErrors(resp.Body)
-	}
-
-	return json.NewDecoder(resp.Body), nil
+	return c.doJSONAPIReq(ret, req, expectedReturnCode)
 }
 
 func (c *Client) genericJSONDataAPIPost(urlString string, dataPayload interface{}, expectedReturnCode int) error {
@@ -241,72 +238,42 @@ func (c *Client) genericJSONDataAPIPatch(urlString string, dataPayload interface
 	return c.genericJSONDataAPIWriteNoResponseWithContentType("PATCH", urlString, dataPayload, "application/merge-patch+json", expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIPostWithResponse(urlString string, dataPayload interface{}, expectedReturnCode int) (*json.Decoder, error) {
-	return c.genericJSONDataAPIWriteWithResponse("POST", urlString, dataPayload, expectedReturnCode)
+func (c *Client) genericJSONDataAPIPostWithResponse(ret interface{}, urlString string, dataPayload interface{}, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWriteWithResponse(ret, "POST", urlString, dataPayload, expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIPutWithResponse(urlString string, dataPayload interface{}, expectedReturnCode int) (*json.Decoder, error) {
-	return c.genericJSONDataAPIWriteWithResponse("PUT", urlString, dataPayload, expectedReturnCode)
+func (c *Client) genericJSONDataAPIPutWithResponse(ret interface{}, urlString string, dataPayload interface{}, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWriteWithResponse(ret, "PUT", urlString, dataPayload, expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIPatchWithResponse(urlString string, dataPayload interface{}, expectedReturnCode int) (*json.Decoder, error) {
-	return c.genericJSONDataAPIWriteWithResponseWithContentType("PATCH", urlString, dataPayload, "application/merge-patch+json", expectedReturnCode)
+func (c *Client) genericJSONDataAPIPatchWithResponse(ret interface{}, urlString string, dataPayload interface{}, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWriteWithResponseWithContentType(ret, "PATCH", urlString, dataPayload, "application/merge-patch+json", expectedReturnCode)
 }
 
 func (c *Client) genericJSONDataAPIWriteNoResponse(httpVerb string, urlString string, dataPayload interface{}, expectedReturnCode int) error {
-	decoder, err := c.genericJSONDataAPIWrite(httpVerb, urlString, dataPayload, expectedReturnCode)
-	if err != nil {
-		return err
-	}
-
-	// When calling this function, we're discarding the response, but there might indeed have been
-	// something in the body. To avoid screwing up our client, we need ensure the response
-	// is drained and the body reader is closed.
-	io.Copy(ioutil.Discard, decoder.Buffered())
-
-	return nil
+	return c.genericJSONDataAPIWrite(nil, httpVerb, urlString, dataPayload, expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIWriteWithResponse(httpVerb string, urlString string, dataPayload interface{}, expectedReturnCode int) (*json.Decoder, error) {
-	decoder, err := c.genericJSONDataAPIWrite(httpVerb, urlString, dataPayload, expectedReturnCode)
-	if err != nil {
-		return nil, err
-	}
-
-	return decoder, err
+func (c *Client) genericJSONDataAPIWriteWithResponse(ret interface{}, httpVerb string, urlString string, dataPayload interface{}, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWrite(ret, httpVerb, urlString, dataPayload, expectedReturnCode)
 }
 
 func (c *Client) genericJSONDataAPIWriteNoResponseWithContentType(httpVerb string, urlString string, dataPayload interface{},
 	contentType string, expectedReturnCode int) error {
-	decoder, err := c.genericJSONDataAPIWriteWithContentType(httpVerb, urlString, dataPayload, contentType, expectedReturnCode)
-	if err != nil {
-		return err
-	}
-
-	// When calling this function, we're discarding the response, but there might indeed have been
-	// something in the body. To avoid screwing up our client, we need ensure the response
-	// is drained and the body reader is closed.
-	io.Copy(ioutil.Discard, decoder.Buffered())
-
-	return nil
+	return c.genericJSONDataAPIWriteWithContentType(nil, httpVerb, urlString, dataPayload, contentType, expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIWriteWithResponseWithContentType(httpVerb string, urlString string, dataPayload interface{},
-	contentType string, expectedReturnCode int) (*json.Decoder, error) {
-	decoder, err := c.genericJSONDataAPIWriteWithContentType(httpVerb, urlString, dataPayload, contentType, expectedReturnCode)
-	if err != nil {
-		return nil, err
-	}
-
-	return decoder, err
+func (c *Client) genericJSONDataAPIWriteWithResponseWithContentType(ret interface{}, httpVerb string, urlString string, dataPayload interface{},
+	contentType string, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWriteWithContentType(ret, httpVerb, urlString, dataPayload, contentType, expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIWrite(httpVerb string, urlString string, dataPayload interface{}, expectedReturnCode int) (*json.Decoder, error) {
-	return c.genericJSONDataAPIWriteWithContentType(httpVerb, urlString, dataPayload, "application/json", expectedReturnCode)
+func (c *Client) genericJSONDataAPIWrite(ret interface{}, httpVerb string, urlString string, dataPayload interface{}, expectedReturnCode int) error {
+	return c.genericJSONDataAPIWriteWithContentType(ret, httpVerb, urlString, dataPayload, "application/json", expectedReturnCode)
 }
 
-func (c *Client) genericJSONDataAPIWriteWithContentType(httpVerb string, urlString string, dataPayload interface{},
-	contentType string, expectedReturnCode int) (*json.Decoder, error) {
+func (c *Client) genericJSONDataAPIWriteWithContentType(ret interface{}, httpVerb string, urlString string, dataPayload interface{},
+	contentType string, expectedReturnCode int) error {
 	var requestBody struct {
 		Data interface{} `json:"data"`
 	}
@@ -315,28 +282,19 @@ func (c *Client) genericJSONDataAPIWriteWithContentType(httpVerb string, urlStri
 	b := new(bytes.Buffer)
 	err := json.NewEncoder(b).Encode(requestBody)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req, err := http.NewRequest(httpVerb, urlString, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Add("Authorization", "Bearer "+c.token)
 	req.Header.Add("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != expectedReturnCode {
-		return nil, errorFromJSONErrors(resp.Body)
-	}
-
-	return json.NewDecoder(resp.Body), nil
+	return c.doJSONAPIReq(ret, req, expectedReturnCode)
 }
 
 func (c *Client) genericJSONDataAPIDelete(urlString string, expectedReturnCode int) error {
@@ -347,20 +305,43 @@ func (c *Client) genericJSONDataAPIDelete(urlString string, expectedReturnCode i
 	req.Header.Add("Authorization", "Bearer "+c.token)
 	req.Header.Set("User-Agent", c.UserAgent)
 
+	return c.doJSONAPIReq(nil, req, expectedReturnCode)
+}
+
+func (c *Client) doJSONAPIReq(ret interface{}, req *http.Request, expectedReturnCode int) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != expectedReturnCode {
 		return errorFromJSONErrors(resp.Body)
 	}
 
-	// When calling this function, we're discarding the response, but there might indeed have been
-	// something in the body. To avoid screwing up our client, we need ensure the response
-	// is drained and the body reader is closed.
-	io.Copy(ioutil.Discard, resp.Body)
-	defer resp.Body.Close()
+	// If we don't want the reply, discard the body and return
+	if ret == nil {
+		_, err := io.Copy(ioutil.Discard, resp.Body)
+		return err
+	}
 
-	return nil
+	// Parse the payload as we should. This means we have to look for the "data" enclosure.
+	decoder := json.NewDecoder(resp.Body)
+
+	// Iterate until we match "data", or until we find something wrong - in that case, return an error
+	for t, err := decoder.Token(); t != "data"; t, err = decoder.Token() {
+		switch err {
+		case nil:
+			// All good, continue
+		case io.EOF:
+			// We reached the end of the stream. It was malformed
+			return ErrMalformedPayload
+		default:
+			// Other errors in decoding, return
+			return err
+		}
+	}
+
+	// If we got here, decode what's left into our interface
+	return decoder.Decode(ret)
 }

@@ -154,12 +154,12 @@ func (s *DatastreamAggregateValue) UnmarshalJSON(b []byte) error {
 	}
 
 	timestampInterface, _ := j.Get("timestamp")
-	switch timestampInterface.(type) {
+	switch v := timestampInterface.(type) {
 	case time.Time:
-		s.Timestamp = timestampInterface.(time.Time)
+		s.Timestamp = v
 	case string:
 		var err error
-		s.Timestamp, err = time.Parse(time.RFC3339Nano, timestampInterface.(string))
+		s.Timestamp, err = time.Parse(time.RFC3339Nano, v)
 		if err != nil {
 			return err
 		}
