@@ -38,15 +38,6 @@ const (
 	Flow AstarteService = 6
 )
 
-var astarteServiceToJwtClaim = map[AstarteService]string{
-	Housekeeping:    "a_ha",
-	RealmManagement: "a_rma",
-	Pairing:         "a_pa",
-	AppEngine:       "a_aea",
-	Channels:        "a_ch",
-	Flow:            "a_f",
-}
-
 var astarteServiceValidNames = map[string]AstarteService{
 	"housekeeping":     Housekeeping,
 	"hk":               Housekeeping,
@@ -75,11 +66,6 @@ func (astarteService AstarteService) String() string {
 	}
 
 	return names[astarteService]
-}
-
-// JwtClaim returns the corresponding JWT claim associated to the Service (if any)
-func (astarteService AstarteService) JwtClaim() string {
-	return astarteServiceToJwtClaim[astarteService]
 }
 
 // AstarteServiceFromString returns a valid AstarteService out of a string
