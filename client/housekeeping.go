@@ -31,38 +31,20 @@ type HousekeepingService struct {
 func (s *HousekeepingService) ListRealms() ([]string, error) {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, "/v1/realms")
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []string `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
+	realmsList := []string{}
+	err := s.client.genericJSONDataAPIGET(&realmsList, callURL.String(), 200)
 
-	return responseBody.Data, nil
+	return realmsList, err
 }
 
 // GetRealm returns data about a single Realm.
 func (s *HousekeepingService) GetRealm(realm string) (RealmDetails, error) {
 	callURL, _ := url.Parse(s.housekeepingURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/realms/%s", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return RealmDetails{}, err
-	}
-	var responseBody struct {
-		Data RealmDetails `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return RealmDetails{}, err
-	}
+	realmDetails := RealmDetails{}
+	err := s.client.genericJSONDataAPIGET(&realmDetails, callURL.String(), 200)
 
-	return responseBody.Data, nil
+	return realmDetails, err
 }
 
 // CreateRealm creates a new Realm in the Cluster with default parameters.

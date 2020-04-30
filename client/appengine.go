@@ -15,7 +15,6 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -81,24 +80,17 @@ func (s *AppEngineService) GetDatastreamsTimeWindowPaginator(realm, deviceIdenti
 // GetAggregateParametricDatastreamSnapshot returns the last value for a Parametric Datastream aggregate interface
 func (s *AppEngineService) GetAggregateParametricDatastreamSnapshot(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName string) (map[string]DatastreamAggregateValue, error) {
 	// It's a snapshot, so limit=1
-	decoder, err := s.appengineGenericJSONDataAPIGet(interfaceName, realm, deviceIdentifier, deviceIdentifierType, "limit=1")
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data orderedmap.OrderedMap `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
+	snapshot := orderedmap.OrderedMap{}
+	if err := s.appengineGenericJSONDataAPIGet(&snapshot, interfaceName, realm, deviceIdentifier, deviceIdentifierType, "limit=1"); err != nil {
 		return nil, err
 	}
 
 	// If there is no data, return an empty value
-	if len(responseBody.Data.Keys()) == 0 {
+	if len(snapshot.Keys()) == 0 {
 		return nil, nil
 	}
 
-	return parseAggregateDatastreamInterface(responseBody.Data)
+	return parseAggregateDatastreamInterface(snapshot)
 }
 
 // GetAggregateDatastreamSnapshot returns the last value for a non-parametric, Datastream aggregate interface
@@ -204,35 +196,17 @@ func (s *AppEngineService) SetProperty(realm, deviceIdentifier string, deviceIde
 //////////
 
 func (s *AppEngineService) nestedIndividualQuery(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) (map[string]interface{}, error) {
-	decoder, err := s.appengineGenericJSONDataAPIGet(urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data map[string]interface{} `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
+	ret := map[string]interface{}{}
+	err := s.appengineGenericJSONDataAPIGet(&ret, urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
 
-	return responseBody.Data, nil
+	return ret, err
 }
 
 func (s *AppEngineService) aggregateDatastreamQuery(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) ([]DatastreamAggregateValue, error) {
-	decoder, err := s.appengineGenericJSONDataAPIGet(urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []DatastreamAggregateValue `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
+	ret := []DatastreamAggregateValue{}
+	err := s.appengineGenericJSONDataAPIGet(&ret, urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
 
-	return responseBody.Data, nil
+	return ret, err
 }
 
 func (s *AppEngineService) appengineGenericJSONDataAPIURL(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) (*url.URL, error) {
@@ -249,12 +223,13 @@ func (s *AppEngineService) appengineGenericJSONDataAPIURL(urlPath, realm, device
 	return callURL, nil
 }
 
-func (s *AppEngineService) appengineGenericJSONDataAPIGet(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) (*json.Decoder, error) {
+func (s *AppEngineService) appengineGenericJSONDataAPIGet(ret interface{}, urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) error {
 	url, err := s.appengineGenericJSONDataAPIURL(urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return s.client.genericJSONDataAPIGET(url.String(), 200)
+
+	return s.client.genericJSONDataAPIGET(ret, url.String(), 200)
 }
 
 func (s *AppEngineService) getDatastreamInternal(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string,

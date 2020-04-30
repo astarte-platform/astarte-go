@@ -75,26 +75,15 @@ func (d *DatastreamPaginator) GetNextPage() ([]DatastreamValue, error) {
 
 	callURL, _ := d.setupCallURL()
 
-	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []DatastreamValue `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
+	page := []DatastreamValue{}
+	err := d.client.genericJSONDataAPIGET(&page, callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(responseBody.Data) < d.pageSize {
-		d.hasNextPage = false
-	} else {
-		d.hasNextPage = true
-		d.nextWindow = responseBody.Data[len(responseBody.Data)-1].Timestamp
-	}
+	d.computePageState(len(page), page[len(page)-1].Timestamp)
 
-	return responseBody.Data, nil
+	return page, nil
 }
 
 // GetNextAggregatePage retrieves the next result page from the paginator for an Aggregate interface.
@@ -107,26 +96,24 @@ func (d *DatastreamPaginator) GetNextAggregatePage() ([]DatastreamAggregateValue
 
 	callURL, _ := d.setupCallURL()
 
-	decoder, err := d.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []DatastreamAggregateValue `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
+	page := []DatastreamAggregateValue{}
+	err := d.client.genericJSONDataAPIGET(&page, callURL.String(), 200)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(responseBody.Data) < d.pageSize {
+	d.computePageState(len(page), page[len(page)-1].Timestamp)
+
+	return page, nil
+}
+
+func (d *DatastreamPaginator) computePageState(resultLength int, nextWindow time.Time) {
+	if resultLength < d.pageSize {
 		d.hasNextPage = false
 	} else {
 		d.hasNextPage = true
-		d.nextWindow = responseBody.Data[len(responseBody.Data)-1].Timestamp
+		d.nextWindow = nextWindow
 	}
-
-	return responseBody.Data, nil
 }
 
 func (d *DatastreamPaginator) setupCallURL() (*url.URL, error) {

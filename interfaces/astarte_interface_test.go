@@ -74,7 +74,7 @@ func TestMarshaling(t *testing.T) {
 		Description:   "Describes available generic sensors.",
 		Documentation: "This interface allows to describe available sensors and their attributes such as name and sampled data measurement unit. Sensors are identified by their sensor_id. See also org.astarte-platform.genericsensors.AvailableSensors.",
 		Mappings: []AstarteInterfaceMapping{
-			AstarteInterfaceMapping{
+			{
 				Endpoint:                "/%{sensor_id}/name",
 				Type:                    String,
 				Description:             "Sensor name.",
@@ -84,7 +84,7 @@ func TestMarshaling(t *testing.T) {
 				DatabaseRetentionPolicy: UseTTL,
 				DatabaseRetentionTTL:    30000,
 			},
-			AstarteInterfaceMapping{
+			{
 				Endpoint:      "/%{sensor_id}/unit",
 				Type:          String,
 				Description:   "Sample data measurement unit.",

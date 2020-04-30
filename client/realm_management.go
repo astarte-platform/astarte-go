@@ -32,57 +32,33 @@ type RealmManagementService struct {
 func (s *RealmManagementService) ListInterfaces(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []string `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
 
-	return responseBody.Data, nil
+	interfacesList := []string{}
+	err := s.client.genericJSONDataAPIGET(&interfacesList, callURL.String(), 200)
+
+	return interfacesList, err
 }
 
 // ListInterfaceMajorVersions returns all available major versions for a given Interface in a Realm.
 func (s *RealmManagementService) ListInterfaceMajorVersions(realm string, interfaceName string) ([]int, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s", realm, interfaceName))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []int `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
 
-	return responseBody.Data, nil
+	interfaceMajorVersions := []int{}
+	err := s.client.genericJSONDataAPIGET(&interfaceMajorVersions, callURL.String(), 200)
+
+	return interfaceMajorVersions, err
 }
 
 // GetInterface returns an interface, identified by a Major version, in a Realm
 func (s *RealmManagementService) GetInterface(realm string, interfaceName string, interfaceMajor int) (interfaces.AstarteInterface, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return interfaces.AstarteInterface{}, err
-	}
-	var responseBody struct {
-		Data interfaces.AstarteInterface `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return interfaces.AstarteInterface{}, err
-	}
 
-	return interfaces.EnsureInterfaceDefaults(responseBody.Data), nil
+	iface := interfaces.AstarteInterface{}
+	err := s.client.genericJSONDataAPIGET(&iface, callURL.String(), 200)
+
+	return interfaces.EnsureInterfaceDefaults(iface), err
 }
 
 // InstallInterface installs a new major version of an Interface into the Realm
@@ -110,38 +86,22 @@ func (s *RealmManagementService) UpdateInterface(realm string, interfaceName str
 func (s *RealmManagementService) ListTriggers(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []string `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
 
-	return responseBody.Data, nil
+	triggers := []string{}
+	err := s.client.genericJSONDataAPIGET(&triggers, callURL.String(), 200)
+
+	return triggers, err
 }
 
 // GetTrigger returns a trigger installed in a Realm
 func (s *RealmManagementService) GetTrigger(realm string, triggerName string) (map[string]interface{}, error) {
 	callURL, _ := url.Parse(s.realmManagementURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers/%s", realm, triggerName))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data map[string]interface{} `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
 
-	return responseBody.Data, nil
+	trigger := map[string]interface{}{}
+	err := s.client.genericJSONDataAPIGET(&trigger, callURL.String(), 200)
+
+	return trigger, err
 }
 
 // InstallTrigger installs a Trigger into the Realm

@@ -26,19 +26,10 @@ import (
 func (s *AppEngineService) ListGroups(realm string) ([]string, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []string `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
+	groupsList := []string{}
+	err := s.client.genericJSONDataAPIGET(&groupsList, callURL.String(), 200)
 
-	return responseBody.Data, nil
+	return groupsList, err
 }
 
 // CreateGroup creates a group with the given deviceIdentifierList in the Realm
@@ -68,19 +59,10 @@ func (s *AppEngineService) CreateGroup(realm string, groupName string, deviceIde
 func (s *AppEngineService) ListGroupDevices(realm string, groupName string) ([]string, error) {
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
-	decoder, err := s.client.genericJSONDataAPIGET(callURL.String(), 200)
-	if err != nil {
-		return nil, err
-	}
-	var responseBody struct {
-		Data []string `json:"data"`
-	}
-	err = decoder.Decode(&responseBody)
-	if err != nil {
-		return nil, err
-	}
+	groupDevicesList := []string{}
+	err := s.client.genericJSONDataAPIGET(&groupDevicesList, callURL.String(), 200)
 
-	return responseBody.Data, nil
+	return groupDevicesList, err
 }
 
 // AddDeviceToGroup adds a device to the group
