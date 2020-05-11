@@ -163,6 +163,7 @@ func (c *Client) SetTokenFromPrivateKeyFileWithTTL(privateKeyFile string, ttlSec
 	servicesAndClaims := map[misc.AstarteService][]string{
 		misc.AppEngine:       {},
 		misc.Channels:        {},
+		misc.Flow:            {},
 		misc.Housekeeping:    {},
 		misc.Pairing:         {},
 		misc.RealmManagement: {},
@@ -193,6 +194,7 @@ func (c *Client) SetTokenFromPrivateKeyWithTTL(privateKey []byte, ttlSeconds int
 	servicesAndClaims := map[misc.AstarteService][]string{
 		misc.AppEngine:       {},
 		misc.Channels:        {},
+		misc.Flow:            {},
 		misc.Housekeeping:    {},
 		misc.Pairing:         {},
 		misc.RealmManagement: {},
