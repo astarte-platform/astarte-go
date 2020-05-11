@@ -34,6 +34,8 @@ const (
 	AppEngine AstarteService = 4
 	// Channels is Astarte's service for WebSockets
 	Channels AstarteService = 5
+	// Flow is Astarte Flow
+	Flow AstarteService = 6
 )
 
 var astarteServiceToJwtClaim = map[AstarteService]string{
@@ -42,6 +44,7 @@ var astarteServiceToJwtClaim = map[AstarteService]string{
 	Pairing:         "a_pa",
 	AppEngine:       "a_aea",
 	Channels:        "a_ch",
+	Flow:            "a_f",
 }
 
 var astarteServiceValidNames = map[string]AstarteService{
@@ -54,6 +57,7 @@ var astarteServiceValidNames = map[string]AstarteService{
 	"appengine":        AppEngine,
 	"app":              AppEngine,
 	"channels":         Channels,
+	"flow":             Flow,
 }
 
 func (astarteService AstarteService) String() string {
@@ -63,9 +67,10 @@ func (astarteService AstarteService) String() string {
 		"realm-management",
 		"pairing",
 		"appengine",
-		"channels"}
+		"channels",
+		"flow"}
 
-	if astarteService < Housekeeping || astarteService > Channels {
+	if astarteService < Housekeeping || astarteService > Flow {
 		return ""
 	}
 
