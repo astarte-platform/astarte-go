@@ -243,10 +243,42 @@ func parametricMappingValidation(astarteInterface AstarteInterface, interfacePat
 	return AstarteInterfaceMapping{}, fmt.Errorf("Path %s does not exist on Interface %s", interfacePath, astarteInterface.Name)
 }
 
+func processGenericSlice(mappingType AstarteMappingType, c []interface{}) error {
+	// This is the ugliest possible case: we have an array nested in an aggregate. We need to individually validate
+	// each and every element of the slice to be certain of the type.
+	for _, v := range c {
+		var e error
+		switch mappingType {
+		case IntegerArray:
+			e = validateType(Integer, v)
+		case LongInteger:
+			e = validateType(LongInteger, v)
+		case DoubleArray:
+			e = validateType(Double, v)
+		case StringArray:
+			e = validateType(String, v)
+		case BooleanArray:
+			e = validateType(Boolean, v)
+		case BinaryBlobArray:
+			e = validateType(BinaryBlob, v)
+		case DateTimeArray:
+			e = validateType(DateTime, v)
+		default:
+			return fmt.Errorf("Internal error in slice processing")
+		}
+
+		if e != nil {
+			return fmt.Errorf("Nested error in %s validation: %s", mappingType, e)
+		}
+	}
+
+	return nil
+}
+
 func validateType(mappingType AstarteMappingType, value interface{}) error {
 	// Do a case switch and check, depending on the golang type of value, whether
 	// we have a match with the Astarte type or not.
-	switch value.(type) {
+	switch c := value.(type) {
 	case int, int8, int16, int32, uint, uint16, uint32:
 		if mappingType == Integer || mappingType == LongInteger || mappingType == Double {
 			return nil
@@ -303,7 +335,11 @@ func validateType(mappingType AstarteMappingType, value interface{}) error {
 		if mappingType == DateTimeArray {
 			return nil
 		}
+	case []interface{}:
+		// This is the ugliest possible case: we have an array nested in an aggregate. We need to individually validate
+		// each and every element of the slice to be certain of the type.
+		return processGenericSlice(mappingType, c)
 	}
 
-	return fmt.Errorf("Value for mapping does not match type restrictions for %s", mappingType)
+	return fmt.Errorf("Value %T for mapping does not match type restrictions for %s", value, mappingType)
 }
