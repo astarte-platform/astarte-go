@@ -15,6 +15,7 @@
 package misc
 
 import (
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -28,9 +29,11 @@ import (
 
 var (
 	// ErrKeyMustBePEMEncoded is returned when the key is not encoded in PEM format
-	ErrKeyMustBePEMEncoded = errors.New("Invalid Key: Key must be PEM encoded PKCS1 or PKCS8 private key")
-	// ErrNotRSAPrivateKey is returned when the private key is not a RSA key
-	ErrNotRSAPrivateKey = errors.New("Key is not a valid RSA private key")
+	ErrKeyMustBePEMEncoded = errors.New("Invalid Key: Key must be PEM encoded private key")
+	// ErrNotPrivateKey is returned when the private key is not valid
+	ErrNotPrivateKey = errors.New("Key is not a valid private key")
+	// ErrUnsupportedPrivateKey is returned when the chosen private key is not supported for JWT generation
+	ErrUnsupportedPrivateKey = errors.New("Key is not supported for JWT generation")
 )
 
 type astarteClaims struct {
@@ -61,8 +64,8 @@ func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[
 	return GenerateAstarteJWTFromPEMKey(keyPEM, servicesAndClaims, ttlSeconds)
 }
 
-// ParseRSAPrivateKeyFromPEM parses a PEM encoded PKCS1 or PKCS8 private key
-func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
+// ParsePrivateKeyFromPEM parses a PEM encoded private key
+func ParsePrivateKeyFromPEM(key []byte) (interface{}, error) {
 	var err error
 
 	// Parse PEM block
@@ -72,19 +75,32 @@ func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
 	}
 
 	var parsedKey interface{}
-	if parsedKey, err = x509.ParsePKCS1PrivateKey(block.Bytes); err != nil {
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		if parsedKey, err = x509.ParsePKCS1PrivateKey(block.Bytes); err != nil {
+			return nil, err
+		}
+
+	case "PRIVATE KEY":
 		if parsedKey, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 			return nil, err
 		}
+
+	case "EC PRIVATE KEY":
+		if parsedKey, err = x509.ParseECPrivateKey(block.Bytes); err != nil {
+			return nil, err
+		}
+
+	default:
+		return nil, ErrNotPrivateKey
 	}
 
-	var pkey *rsa.PrivateKey
-	var ok bool
-	if pkey, ok = parsedKey.(*rsa.PrivateKey); !ok {
-		return nil, ErrNotRSAPrivateKey
+	switch parsedKey.(type) {
+	case *rsa.PrivateKey, *ecdsa.PrivateKey:
+		return parsedKey, nil
+	default:
+		return nil, ErrUnsupportedPrivateKey
 	}
-
-	return pkey, nil
 }
 
 // GenerateAstarteJWTFromPEMKey generates an Astarte Token for a specific API out of a Private Key PEM bytearray.
@@ -92,7 +108,7 @@ func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
 // a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
 func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[AstarteService][]string,
 	ttlSeconds int64) (jwtString string, err error) {
-	key, err := ParseRSAPrivateKeyFromPEM(privateKeyPEM)
+	key, err := ParsePrivateKeyFromPEM(privateKeyPEM)
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +149,7 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[As
 		}
 	}
 
-	signer, err := jwt.NewSignerRS(jwt.RS256, key)
+	signer, err := getJWTSigner(key)
 	if err != nil {
 		return "", err
 	}
@@ -145,4 +161,32 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[As
 	}
 
 	return token.String(), nil
+}
+
+func getJWTSigner(key interface{}) (jwt.Signer, error) {
+	var signer jwt.Signer
+	var err error
+	switch k := key.(type) {
+	case *rsa.PrivateKey:
+		signer, err = jwt.NewSignerRS(jwt.RS256, k)
+
+	case *ecdsa.PrivateKey:
+		// Match the EC curve with the correct signing algorithm
+		switch k.PublicKey.Curve.Params().Name {
+		case "P-256":
+			signer, err = jwt.NewSignerES(jwt.ES256, k)
+		case "P-384":
+			signer, err = jwt.NewSignerES(jwt.ES384, k)
+		case "P-521":
+			signer, err = jwt.NewSignerES(jwt.ES512, k)
+		default:
+			return nil, ErrUnsupportedPrivateKey
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return signer, nil
 }
