@@ -1,6 +1,6 @@
 github.com/cristalhq/jwt/v3 v3.0.4 h1:1x04GZr04SJ3vd1Fsbl9eCPAuLwl753P7ywWgISrndo=
 github.com/cristalhq/jwt/v3 v3.0.4/go.mod h1:XOnIXst8ozq/esy5N1XOlSyQqBd+84fxJ99FK+1jgL8=
-github.com/google/uuid v1.1.1 h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=
-github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 h1:i462o439ZjprVSFSZLZxcsoAe592sZB1rci2Z8j4wdk=
-github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0/go.mod h1:N0Wam8K1arqPXNWjMo21EXnBPOPp36vB07FNRdD2geA=
+github.com/google/uuid v1.1.2 h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=
+github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/iancoleman/orderedmap v0.1.0 h1:2orAxZBJsvimgEBmMWfXaFlzSG2fbQil5qzP3F6cCkg=
+github.com/iancoleman/orderedmap v0.1.0/go.mod h1:N0Wam8K1arqPXNWjMo21EXnBPOPp36vB07FNRdD2geA=
