@@ -65,6 +65,14 @@ type Client struct {
 	RealmManagement *RealmManagementService
 }
 
+// Links is a struct that represent the links metadata returned by Astarte API.
+// This metadata is used in Astarte APIs to perform pagination, allowing the
+// user to simply follow the Next link, if any, to fetch the next page
+type Links struct {
+	Self string `json:"self,omitempty"`
+	Next string `json:"next,omitempty"`
+}
+
 // NewClient creates a new Astarte API client with standard URL hierarchies.
 func NewClient(rawBaseURL string, httpClient *http.Client) (*Client, error) {
 	if httpClient == nil {
@@ -217,6 +225,10 @@ func (c *Client) SetToken(token string) {
 }
 
 func (c *Client) genericJSONDataAPIGET(ret interface{}, urlString string, expectedReturnCode int) error {
+	return c.genericJSONDataAPIGETWithLinks(ret, nil, urlString, expectedReturnCode)
+}
+
+func (c *Client) genericJSONDataAPIGETWithLinks(ret interface{}, retLinks *Links, urlString string, expectedReturnCode int) error {
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
 		return err
@@ -225,7 +237,7 @@ func (c *Client) genericJSONDataAPIGET(ret interface{}, urlString string, expect
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	return c.doJSONAPIReq(ret, req, expectedReturnCode)
+	return c.doJSONAPIReqWithLinks(ret, retLinks, req, expectedReturnCode)
 }
 
 func (c *Client) genericJSONDataAPIPost(urlString string, dataPayload interface{}, expectedReturnCode int) error {
@@ -311,6 +323,10 @@ func (c *Client) genericJSONDataAPIDelete(urlString string, expectedReturnCode i
 }
 
 func (c *Client) doJSONAPIReq(ret interface{}, req *http.Request, expectedReturnCode int) error {
+	return c.doJSONAPIReqWithLinks(ret, nil, req, expectedReturnCode)
+}
+
+func (c *Client) doJSONAPIReqWithLinks(ret interface{}, retLinks *Links, req *http.Request, expectedReturnCode int) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -327,23 +343,40 @@ func (c *Client) doJSONAPIReq(ret interface{}, req *http.Request, expectedReturn
 		return err
 	}
 
-	// Parse the payload as we should. This means we have to look for the "data" enclosure.
+	// Parse the payload as we should. This means we have to look for the
+	// "data" enclosure for data and "links" for links.
 	decoder := json.NewDecoder(resp.Body)
 
-	// Iterate until we match "data", or until we find something wrong - in that case, return an error
-	for t, err := decoder.Token(); t != "data"; t, err = decoder.Token() {
-		switch err {
-		case nil:
-			// All good, continue
-		case io.EOF:
-			// We reached the end of the stream. It was malformed
-			return ErrMalformedPayload
-		default:
-			// Other errors in decoding, return
+	foundData := false
+	// We initialize it like this so it's already true if retLinks is nil
+	foundLinks := retLinks == nil
+	// Iterate until we decode data and links (if we need them). If we find
+	// something wrong, return an error
+	for t, err := decoder.Token(); err != io.EOF; t, err = decoder.Token() {
+		if err != nil {
+			// Errors in decoding, return
 			return err
+		}
+
+		switch t {
+		case "data":
+			if err = decoder.Decode(ret); err != nil {
+				return err
+			}
+			foundData = true
+		case "links", retLinks != nil:
+			if err = decoder.Decode(retLinks); err != nil {
+				return err
+			}
+			foundLinks = true
+		}
+
+		if foundData && foundLinks {
+			// We're done
+			return nil
 		}
 	}
 
-	// If we got here, decode what's left into our interface
-	return decoder.Decode(ret)
+	// If we got here, we didn't find all that we needed
+	return ErrMalformedPayload
 }
