@@ -19,12 +19,25 @@ import (
 	"net/url"
 )
 
+// DeviceResultFormat represents the format of the Device returned in the Device list.
+type DeviceResultFormat int
+
+const (
+	// DeviceIDFormat means the Paginator will return a list of strings
+	// representing the Device ID of the Devices.
+	DeviceIDFormat DeviceResultFormat = iota
+	// DeviceDetailsFormat means the Paginator will return a list of
+	// DeviceDetails structs
+	DeviceDetailsFormat
+)
+
 // DeviceListPaginator handles a paginated set of results. It provides a one-directional iterator to call onto
 // Astarte AppEngine API and handle potentially extremely large sets of results in chunk. You should prefer
 // DeviceListPaginator rather than direct API calls if you expect your result set to be particularly large.
 type DeviceListPaginator struct {
 	baseURL     *url.URL
 	nextQuery   url.Values
+	format      DeviceResultFormat
 	pageSize    int
 	client      *Client
 	hasNextPage bool
@@ -32,8 +45,7 @@ type DeviceListPaginator struct {
 
 // Rewind rewinds the simulator to the first page. GetNextPage will then return the first page of the call.
 func (d *DeviceListPaginator) Rewind() {
-	// We remove `from_token` query parameter
-	d.nextQuery.Del("from_token")
+	d.nextQuery = url.Values{}
 	d.hasNextPage = true
 }
 
@@ -47,27 +59,51 @@ func (d *DeviceListPaginator) GetPageSize() int {
 	return d.pageSize
 }
 
-// GetNextPage retrieves the next result page from the paginator. Returns the
-// page as an array of Device IDs. If no more results are available,
-// HasNextPage will return false. GetNextPage throws an error if no more pages
-// are available.
-func (d *DeviceListPaginator) GetNextPage() ([]string, error) {
+// GetNextPage retrieves the next result page from the paginator and populates
+// the array pointed by pagePtr with it.
+// The type of pagePtr must be the correct one depending on the format of the
+// paginator: if format is DeviceIDFormat pagePtr must be *[]string, if format
+// is DeviceDetailsFormat pagePtr must be *[]DeviceDetails.
+// If no more results are available, HasNextPage will return false. GetNextPage
+// throws an error if no more pages are available.
+func (d *DeviceListPaginator) GetNextPage(pagePtr interface{}) error {
 	if !d.hasNextPage {
-		return nil, errors.New("No more pages available")
+		return errors.New("No more pages available")
+	}
+
+	if err := d.checkPageFormat(pagePtr); err != nil {
+		return err
 	}
 
 	callURL, _ := d.setupCallURL()
 
-	page := []string{}
 	links := Links{}
-	err := d.client.genericJSONDataAPIGETWithLinks(&page, &links, callURL.String(), 200)
+	err := d.client.genericJSONDataAPIGETWithLinks(pagePtr, &links, callURL.String(), 200)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	d.computePageState(&links)
 
-	return page, nil
+	return nil
+}
+
+func (d *DeviceListPaginator) checkPageFormat(pagePtr interface{}) error {
+	switch d.format {
+	case DeviceIDFormat:
+		_, ok := pagePtr.(*[]string)
+		if !ok {
+			return errors.New("pagePtr must be of type *[]string when using DeviceIDFormat")
+		}
+
+	case DeviceDetailsFormat:
+		_, ok := pagePtr.(*[]DeviceDetails)
+		if !ok {
+			return errors.New("pagePtr must be of type *[]DeviceDetails when using DeviceDetailsFormat")
+		}
+	}
+
+	return nil
 }
 
 func (d *DeviceListPaginator) computePageState(links *Links) {
@@ -85,7 +121,16 @@ func (d *DeviceListPaginator) setupCallURL() (*url.URL, error) {
 	if err != nil {
 		return nil, err
 	}
-	callURL.RawQuery = d.nextQuery.Encode()
+
+	query := d.nextQuery
+	switch d.format {
+	case DeviceIDFormat:
+		query.Set("details", "false")
+	case DeviceDetailsFormat:
+		query.Set("details", "true")
+	}
+
+	callURL.RawQuery = query.Encode()
 
 	return callURL, nil
 }
