@@ -35,14 +35,45 @@ const (
 	AstarteDeviceAlias
 )
 
-// ListDevices returns a list of Devices in the Realm
+// ListDevices returns the list of Device IDs for all Devices in the Realm. The
+// returned result can be large, GetDeviceListPaginator can be used instead to
+// retrieve the device list incrementally.
 func (s *AppEngineService) ListDevices(realm string) ([]string, error) {
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices", realm))
-	deviceList := []string{}
-	err := s.client.genericJSONDataAPIGET(&deviceList, callURL.String(), 200)
+	result := []string{}
 
-	return deviceList, err
+	paginator, err := s.GetDeviceListPaginator(realm, defaultPageSize)
+	if err != nil {
+		return result, err
+	}
+
+	for hasNext := paginator.HasNextPage(); hasNext; hasNext = paginator.HasNextPage() {
+		page, err := paginator.GetNextPage()
+		if err != nil {
+			return []string{}, err
+		}
+		result = append(result, page...)
+	}
+
+	return result, nil
+}
+
+// GetDeviceListPaginator returns a Paginator for all the Devices in the realm.
+func (s *AppEngineService) GetDeviceListPaginator(realm string, pageSize int) (DeviceListPaginator, error) {
+	callURL, err := url.Parse(s.appEngineURL.String())
+	if err != nil {
+		return DeviceListPaginator{}, err
+	}
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices", realm))
+	query := url.Values{}
+
+	deviceListPaginator := DeviceListPaginator{
+		baseURL:     callURL,
+		nextQuery:   query,
+		pageSize:    pageSize,
+		client:      s.client,
+		hasNextPage: true,
+	}
+	return deviceListPaginator, nil
 }
 
 // GetDevice returns the DeviceDetails of a single Device in the Realm

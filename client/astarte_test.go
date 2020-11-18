@@ -112,7 +112,8 @@ func astarteAPIMock(w http.ResponseWriter, req *http.Request) {
 	// Process request
 	switch {
 	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/devices", testRealmName):
-		reply := map[string]interface{}{"data": testDevices}
+		links := map[string]string{"self": fmt.Sprintf("/v1/%s/devices", testRealmName)}
+		reply := map[string]interface{}{"data": testDevices, "links": links}
 		json.NewEncoder(w).Encode(reply)
 	}
 }
