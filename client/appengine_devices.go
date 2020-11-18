@@ -41,13 +41,14 @@ const (
 func (s *AppEngineService) ListDevices(realm string) ([]string, error) {
 	result := []string{}
 
-	paginator, err := s.GetDeviceListPaginator(realm, defaultPageSize)
+	paginator, err := s.GetDeviceListPaginator(realm, defaultPageSize, DeviceIDFormat)
 	if err != nil {
 		return result, err
 	}
 
 	for hasNext := paginator.HasNextPage(); hasNext; hasNext = paginator.HasNextPage() {
-		page, err := paginator.GetNextPage()
+		page := []string{}
+		err := paginator.GetNextPage(&page)
 		if err != nil {
 			return []string{}, err
 		}
@@ -57,8 +58,34 @@ func (s *AppEngineService) ListDevices(realm string) ([]string, error) {
 	return result, nil
 }
 
+// ListDevicesWithDetails returns a list of all Devices in the Realm, each
+// represented by a DeviceDetails struct. The returned result can be large,
+// GetDeviceListPaginator can be used instead to retrieve the device list
+// incrementally.
+func (s *AppEngineService) ListDevicesWithDetails(realm string) ([]DeviceDetails, error) {
+	result := []DeviceDetails{}
+
+	paginator, err := s.GetDeviceListPaginator(realm, defaultPageSize, DeviceDetailsFormat)
+	if err != nil {
+		return result, err
+	}
+
+	for hasNext := paginator.HasNextPage(); hasNext; hasNext = paginator.HasNextPage() {
+		page := []DeviceDetails{}
+		err := paginator.GetNextPage(&page)
+		if err != nil {
+			return []DeviceDetails{}, err
+		}
+		result = append(result, page...)
+	}
+
+	return result, nil
+}
+
 // GetDeviceListPaginator returns a Paginator for all the Devices in the realm.
-func (s *AppEngineService) GetDeviceListPaginator(realm string, pageSize int) (DeviceListPaginator, error) {
+// The paginator can return different result formats depending on the format
+// parameter.
+func (s *AppEngineService) GetDeviceListPaginator(realm string, pageSize int, format DeviceResultFormat) (DeviceListPaginator, error) {
 	callURL, err := url.Parse(s.appEngineURL.String())
 	if err != nil {
 		return DeviceListPaginator{}, err
@@ -69,6 +96,7 @@ func (s *AppEngineService) GetDeviceListPaginator(realm string, pageSize int) (D
 	deviceListPaginator := DeviceListPaginator{
 		baseURL:     callURL,
 		nextQuery:   query,
+		format:      format,
 		pageSize:    pageSize,
 		client:      s.client,
 		hasNextPage: true,
