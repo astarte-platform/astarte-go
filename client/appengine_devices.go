@@ -212,21 +212,21 @@ func (s *AppEngineService) GetDevicesStats(realm string) (DevicesStats, error) {
 	return deviceStats, err
 }
 
-// ListDeviceMetadata is an helper to list all Metadata of a Device
-func (s *AppEngineService) ListDeviceMetadata(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (map[string]string, error) {
+// ListDeviceAttributes is an helper to list all Attributes of a Device
+func (s *AppEngineService) ListDeviceAttributes(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (map[string]string, error) {
 	deviceDetails, err := s.GetDevice(realm, deviceIdentifier, deviceIdentifierType)
 	if err != nil {
 		return nil, err
 	}
-	return deviceDetails.Metadata, nil
+	return deviceDetails.Attributes, nil
 }
 
-// SetDeviceMetadata sets a Metadata key to a certain value for a Device
-func (s *AppEngineService) SetDeviceMetadata(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, metadataKey, metadataValue string) error {
+// SetDeviceAttributes sets an Attributes key to a certain value for a Device
+func (s *AppEngineService) SetDeviceAttributes(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributesKey, attributesValue string) error {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
-	payload := map[string]map[string]string{"metadata": {metadataKey: metadataValue}}
+	payload := map[string]map[string]string{"attributes": {attributesKey: attributesValue}}
 	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, 200)
 	if err != nil {
 		return err
@@ -235,14 +235,14 @@ func (s *AppEngineService) SetDeviceMetadata(realm, deviceIdentifier string, dev
 	return nil
 }
 
-// DeleteDeviceMetadata deletes a Metadata key and its value from a Device
-func (s *AppEngineService) DeleteDeviceMetadata(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, metadataKey string) error {
+// DeleteDeviceAttributes deletes an Attributes key and its value from a Device
+func (s *AppEngineService) DeleteDeviceAttributes(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributesKey string) error {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	callURL, _ := url.Parse(s.appEngineURL.String())
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 	// We're using map[string]interface{} rather than map[string]string since we want to have null
 	// rather than an empty string in the JSON payload, and this is the only way.
-	payload := map[string]map[string]interface{}{"metadata": {metadataKey: nil}}
+	payload := map[string]map[string]interface{}{"attributes": {attributesKey: nil}}
 	err := s.client.genericJSONDataAPIPatch(callURL.String(), payload, 200)
 	if err != nil {
 		return err
