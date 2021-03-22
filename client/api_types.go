@@ -130,7 +130,7 @@ type DeviceDetails struct {
 	Introspection            map[string]DeviceInterfaceIntrospection `json:"introspection"`
 	Aliases                  map[string]string                       `json:"aliases"`
 	PreviousInterfaces       []DeviceInterfaceIntrospection          `json:"previous_interfaces,omitempty"`
-	Metadata                 map[string]string                       `json:"metadata,omitempty"`
+	Attributes               map[string]string                       `json:"attributes,omitempty"`
 }
 
 // DatastreamValue represent one single Datastream Value
