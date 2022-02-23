@@ -91,7 +91,6 @@ func parsePropertiesMap(aMap map[string]interface{}, completeKeyPath string) map
 
 func parseAggregateDatastreamMap(aMap orderedmap.OrderedMap, completeKeyPath string) (map[string]DatastreamAggregateValue, error) {
 	m := make(map[string]DatastreamAggregateValue)
-
 	// Special case: have we hit the bottom?
 	if val, ok := aMap.Get("timestamp"); ok {
 		// Corner case: this might actually be just a token in the path named "timestamp". Let's ensure it
@@ -109,6 +108,10 @@ func parseAggregateDatastreamMap(aMap orderedmap.OrderedMap, completeKeyPath str
 	foundAnything := false
 	for _, key := range aMap.Keys() {
 		val, _ := aMap.Get(key)
+		// bottom values are a slice containing only an OrderedMap
+		if v, ok := val.([]interface{}); ok {
+			val = v[0]
+		}
 		if cVal, ok := val.(orderedmap.OrderedMap); ok {
 			foundAnything = true
 			parsedMap, err := parseAggregateDatastreamMap(cVal, completeKeyPath+"/"+key)
