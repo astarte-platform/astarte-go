@@ -71,7 +71,8 @@ func TestFailedDatastreamSnapshotParsing(t *testing.T) {
 }
 
 func TestAggregateDatastreamSnapshotParsing(t *testing.T) {
-	data := `{"test":{"nested":{"timestamp":"2020-03-23T12:31:08.356Z","val1":true,"val2":12}}}`
+	data := `{"test":{"nested":[{"timestamp":"2020-03-23T12:31:08.356Z","val1":true,"val2":12}]}}`
+
 	v := orderedmap.OrderedMap{}
 	if err := json.Unmarshal([]byte(data), &v); err != nil {
 		t.Error(err)
@@ -95,47 +96,29 @@ func TestAggregateDatastreamSnapshotParsing(t *testing.T) {
 	}
 }
 
-func TestFailAggregateDatastreamSnapshotParsing(t *testing.T) {
-	data := `{"test":{"nested":[{"timestamp":"2020-03-23T12:31:08.356Z","val1":true,"val2":12}]}}`
+func TestParametricDatastreamParsing(t *testing.T) {
+	data := `{"test":{"nested":[{"val1":true,"val2":12,"timestamp":"2022-02-24T11:24:59.284Z"}]}}`
+
 	v := orderedmap.OrderedMap{}
 	if err := json.Unmarshal([]byte(data), &v); err != nil {
 		t.Error(err)
 	}
-	if vals, err := parseAggregateDatastreamInterface(v); err == nil {
+	vals, err := parseAggregateDatastreamInterface(v)
+	if err != nil {
+		t.Error(err)
+	}
+
+	timestamp, err := time.Parse(time.RFC3339Nano, "2022-02-24T11:24:59.284Z")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := vals["/test/nested"]; !ok {
 		t.Error(vals)
-	}
-}
-
-func TestParametricDatastreamParsing(t *testing.T) {
-	uglyLookingDatastream := "{\"data\":{\"nested\":{\"value\":{\"value\":15,\"timestamp\":\"2019-01-01T01:23:45.678Z\",\"reception_timestamp\":\"2019-01-01T01:23:45.678Z\"}, \"timestamp\":{\"value\":\"something\",\"timestamp\":\"2019-01-01T01:23:45.678Z\",\"reception_timestamp\":\"2019-01-01T01:23:45.678Z\"}}}}"
-	// Get the parametric datastream and treat it as individual
-	var responseBody struct {
-		Data map[string]interface{} `json:"data"`
-	}
-	err := json.Unmarshal([]byte(uglyLookingDatastream), &responseBody)
-	if err != nil {
-		t.Error(err)
-	}
-
-	val, err := parseDatastreamInterface(responseBody.Data)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if ds, ok := val["/nested/value"]; ok {
-		if v, ok := ds.Value.(float64); !ok || v != 15 {
-			t.Error("Error in parsing /nested/value", ok, ds, v, reflect.TypeOf(ds))
-		}
 	} else {
-		t.Error("Error in parsing /nested/value", val)
-	}
-
-	if ds, ok := val["/nested/timestamp"]; ok {
-		if v, ok := ds.Value.(string); !ok || v != "something" {
-			t.Error("Error in parsing /nested/timestamp", ok, ds, v, reflect.TypeOf(ds))
+		if val.Timestamp != timestamp {
+			t.Fail()
 		}
-	} else {
-		t.Error("Error in parsing /nested/timestamp", val)
 	}
 }
 
