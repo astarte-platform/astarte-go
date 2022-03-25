@@ -321,6 +321,62 @@ type AstarteInterface struct {
 	Mappings          []AstarteInterfaceMapping   `json:"mappings"`
 }
 
+// requiredAstarteInterface is an helper struct used for validating required fields when unmarshalling an
+// astarte interface. Its fields are defined as pointers so that it is possible determining if any field is
+// present and valid.
+type requiredAstarteInterface struct {
+	Name         *string                           `json:"interface_name"`
+	MajorVersion *int                              `json:"version_major"`
+	MinorVersion *int                              `json:"version_minor"`
+	Type         *string                           `json:"type"`
+	Ownership    *string                           `json:"ownership"`
+	Mappings     []requiredAstarteInterfaceMapping `json:"mappings"`
+}
+
+// requiredAstarteInterfaceMapping is an helper struct used for validating required fields when unmarshalling an
+// astarte interface mapping. Its fields are defined as pointers so that it is possible determining if any field is
+// present and valid.
+type requiredAstarteInterfaceMapping struct {
+	Endpoint *string `json:"endpoint"`
+	Type     *string `json:"type"`
+}
+
+// ensureRequiredFields ensures that any required fields within an AstarteInterface is present and valid. It is
+// employed in place of the UnmarshalJSON interface to avoid infinite loops when unmarshalling an AstarteInterface
+func (r *requiredAstarteInterface) ensureRequiredFields(b []byte) error {
+	required := requiredAstarteInterface{}
+	if err := json.Unmarshal(b, &required); err != nil {
+		return err
+	}
+	if required.Name == nil || (required.Name != nil && *required.Name == "") {
+		return errors.New("Invalid interface: interface_name must be set")
+	}
+	if required.MajorVersion == nil {
+		return errors.New("Invalid interface: version_major must be set")
+	}
+	if required.MinorVersion == nil {
+		return errors.New("Invalid interface: version_minor must be set")
+	}
+	if required.Type == nil {
+		return errors.New("Invalid interface: type must be set")
+	}
+	if required.Ownership == nil {
+		return errors.New("Invalid interface: ownership must be set")
+	}
+	if len(required.Mappings) == 0 {
+		return errors.New("Invalid interface: no mappings are present")
+	}
+	for _, m := range required.Mappings {
+		if m.Endpoint == nil || (m.Endpoint != nil && *m.Endpoint == "") {
+			return errors.New("Invalid interface: missing endpoint in mapping")
+		}
+		if m.Type == nil {
+			return errors.New("Invalid interface: missing type in mapping")
+		}
+	}
+	return nil
+}
+
 // ParseInterfaceFromFile is a convenience function to call ParseInterface with a file as input
 func ParseInterfaceFromFile(interfaceFile string) (AstarteInterface, error) {
 	b, err := ioutil.ReadFile(interfaceFile)
@@ -340,6 +396,12 @@ func ParseInterfaceFromString(interfaceContent string) (AstarteInterface, error)
 // to the correct, expected default value
 func ParseInterface(interfaceContent []byte) (AstarteInterface, error) {
 	astarteInterface := AstarteInterface{}
+	required := requiredAstarteInterface{}
+
+	if err := required.ensureRequiredFields(interfaceContent); err != nil {
+		return astarteInterface, err
+	}
+
 	if err := json.Unmarshal(interfaceContent, &astarteInterface); err != nil {
 		return astarteInterface, err
 	}
