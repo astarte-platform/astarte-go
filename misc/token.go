@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -36,7 +37,7 @@ var (
 	ErrUnsupportedPrivateKey = errors.New("Key is not supported for JWT generation")
 )
 
-type astarteClaims struct {
+type AstarteClaims struct {
 	jwt.StandardClaims
 
 	AppEngineAPI    []string `json:"a_aea,omitempty"`
@@ -47,7 +48,7 @@ type astarteClaims struct {
 	Pairing         []string `json:"a_pa,omitempty"`
 }
 
-func (u *astarteClaims) MarshalBinary() ([]byte, error) {
+func (u *AstarteClaims) MarshalBinary() ([]byte, error) {
 	return json.Marshal(u)
 }
 
@@ -114,7 +115,7 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[As
 	}
 
 	// Build the token claims
-	claims := astarteClaims{}
+	claims := AstarteClaims{}
 	// Handle issue and expiry
 	now := time.Now()
 	claims.IssuedAt = jwt.NewNumericDate(now)
@@ -161,6 +162,50 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[As
 	}
 
 	return token.String(), nil
+}
+
+// GetJWTAstarteClaims returns the set of Astarte claims for an Astarte Token.
+func GetJWTAstarteClaims(rawToken string) (AstarteClaims, error) {
+	token, err := jwt.ParseString(rawToken)
+	if err != nil {
+		return AstarteClaims{}, err
+	}
+
+	ret := AstarteClaims{}
+	err = json.Unmarshal(token.RawClaims(), &ret)
+	if err != nil {
+		return AstarteClaims{}, err
+	}
+
+	return ret, nil
+}
+
+// IsJWTAstarteClaimValidForService verifies that an Astarte Token has access to a given Astarte service.
+func IsJWTAstarteClaimValidForService(token string, service AstarteService) (bool, error) {
+	claims, err := GetJWTAstarteClaims(token)
+	if err != nil {
+		return false, err
+	}
+	switch service {
+	case AppEngine:
+		return hasAuth(claims.AppEngineAPI), nil
+	case RealmManagement:
+		return hasAuth(claims.RealmManagement), nil
+	case Housekeeping:
+		return hasAuth(claims.Housekeeping), nil
+	case Pairing:
+		return hasAuth(claims.Pairing), nil
+	case Channels:
+		return hasAuth(claims.Channels), nil
+	case Flow:
+		return hasAuth(claims.Flow), nil
+	default:
+		return false, fmt.Errorf("unknown Astarte service %s", service.String())
+	}
+}
+
+func hasAuth(auth []string) bool {
+	return len(auth) > 0
 }
 
 func getJWTSigner(key interface{}) (jwt.Signer, error) {
