@@ -35,7 +35,8 @@ func IsValidAstarteDeviceID(deviceID string) bool {
 	return true
 }
 
-// GenerateRandomAstarteDeviceID returns a new Astarte Device ID on a fully Random basis
+// GenerateRandomAstarteDeviceID returns a new Astarte Device ID on a fully Random basis.
+// Do not use in production environments.
 func GenerateRandomAstarteDeviceID() (string, error) {
 	randomUUID, err := uuid.NewRandom()
 	if err != nil {
@@ -49,9 +50,10 @@ func GenerateRandomAstarteDeviceID() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(deviceID), nil
 }
 
-// GetNamespacedAstarteDeviceID returns an Astarte Device ID generated from a namespaced arbitrary payload.
-// It is guaranteed to be always the same for the same namespace and payload
-func GetNamespacedAstarteDeviceID(uuidNamespace string, payloadData []byte) (string, error) {
+// GenerateAstarteDeviceID returns an Astarte Device ID generated from a namespaced arbitrary payload.
+// It is guaranteed to be always the same for the same namespace and payload.
+// This is the go-to function to generate Astarte device IDs.
+func GenerateAstarteDeviceID(uuidNamespace string, payloadData []byte) (string, error) {
 	encodedUUIDNamespace, err := uuid.Parse(uuidNamespace)
 	if err != nil {
 		return "", err
@@ -65,6 +67,13 @@ func GetNamespacedAstarteDeviceID(uuidNamespace string, payloadData []byte) (str
 	}
 
 	return base64.RawURLEncoding.EncodeToString(deviceID), nil
+}
+
+// Deprecated: This function will be removed in next releases. Use `GenerateAstarteDeviceID`.
+// GetNamespacedAstarteDeviceID returns an Astarte Device ID generated from a namespaced arbitrary payload.
+// It is guaranteed to be always the same for the same namespace and payload
+func GetNamespacedAstarteDeviceID(uuidNamespace string, payloadData []byte) (string, error) {
+	return GenerateAstarteDeviceID(uuidNamespace, payloadData)
 }
 
 // DeviceIDToUUID converts a Device ID from the standard Astarte representation (Base 64 Url Encoded) to
