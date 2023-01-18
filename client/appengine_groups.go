@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/astarte-platform/astarte-go/misc"
+	"github.com/astarte-platform/astarte-go/deviceid"
 	"moul.io/http2curl"
 )
 
@@ -72,7 +72,7 @@ type CreateGroupRequest struct {
 // Only valid Astarte device IDs can be used when adding devices to a group.
 func (c *Client) CreateGroup(realm, groupName string, deviceIDList []string) (AstarteRequest, error) {
 	for _, deviceID := range deviceIDList {
-		if !misc.IsValidAstarteDeviceID(deviceID) {
+		if !deviceid.IsValid(deviceID) {
 			return Empty{}, ErrInvalidDeviceID(deviceID)
 		}
 	}
@@ -123,7 +123,7 @@ type AddDeviceToGroupRequest struct {
 // AddDeviceToGroup builds a request to add a device to a group.
 // Only valid Astarte device IDs can be used when adding a device to a group.
 func (c *Client) AddDeviceToGroup(realm, groupName, deviceID string) (AstarteRequest, error) {
-	if !misc.IsValidAstarteDeviceID(deviceID) {
+	if !deviceid.IsValid(deviceID) {
 		return Empty{}, ErrInvalidDeviceID(deviceID)
 	}
 
@@ -159,7 +159,7 @@ type RemoveDeviceFromGroupRequest struct {
 // RemoveDeviceFromGroup builds a request to removes a device from the group.
 // Only valid Astarte device IDs can be used when removing a device from a group.
 func (c *Client) RemoveDeviceFromGroup(realm, groupName, deviceID string) (AstarteRequest, error) {
-	if !misc.IsValidAstarteDeviceID(deviceID) {
+	if !deviceid.IsValid(deviceID) {
 		return Empty{}, ErrInvalidDeviceID(deviceID)
 	}
 
