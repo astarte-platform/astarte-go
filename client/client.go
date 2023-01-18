@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/astarte-platform/astarte-go/misc"
+	"github.com/astarte-platform/astarte-go/auth"
 )
 
 const defaultJWTExpiry = 300
@@ -251,17 +251,17 @@ func setDefaults(c *Client) *Client {
 
 func (c *Client) getJWT() string {
 	// Add all types
-	servicesAndClaims := map[misc.AstarteService][]string{
-		misc.AppEngine:       {},
-		misc.Channels:        {},
-		misc.Flow:            {},
-		misc.Housekeeping:    {},
-		misc.Pairing:         {},
-		misc.RealmManagement: {},
+	servicesAndClaims := map[astarteservices.AstarteService][]string{
+		astarteservices.AppEngine:       {},
+		astarteservices.Channels:        {},
+		astarteservices.Flow:            {},
+		astarteservices.Housekeeping:    {},
+		astarteservices.Pairing:         {},
+		astarteservices.RealmManagement: {},
 	}
 	if c.token == "" {
 		// if we're here, we can safely assume that the key was OK
-		token, _ := misc.GenerateAstarteJWTFromPEMKey(c.privateKey, servicesAndClaims, int64(c.expiry))
+		token, _ := auth.GenerateAstarteJWTFromPEMKey(c.privateKey, servicesAndClaims, int64(c.expiry))
 		return token
 	}
 	return c.token
