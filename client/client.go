@@ -20,6 +20,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/astarte-platform/astarte-go/astarteservices"
 	"github.com/astarte-platform/astarte-go/auth"
 )
 

@@ -25,7 +25,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/astarte-platform/astarte-go/misc"
+	"github.com/astarte-platform/astarte-go/astarteservices"
 	jwt "github.com/cristalhq/jwt/v3"
 )
 
@@ -56,7 +56,7 @@ func (u *AstarteClaims) MarshalBinary() ([]byte, error) {
 // GenerateAstarteJWTFromKeyFile generates an Astarte Token for a specific API out of a Private Key File.
 // servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
 // a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
-func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[misc.AstarteService][]string,
+func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[astarteservices.AstarteService][]string,
 	ttlSeconds int64) (jwtString string, err error) {
 	keyPEM, err := ioutil.ReadFile(privateKeyFile)
 	if err != nil {
@@ -108,7 +108,7 @@ func ParsePrivateKeyFromPEM(key []byte) (interface{}, error) {
 // GenerateAstarteJWTFromPEMKey generates an Astarte Token for a specific API out of a Private Key PEM bytearray.
 // servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
 // a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
-func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[misc.AstarteService][]string,
+func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[astarteservices.AstarteService][]string,
 	ttlSeconds int64) (jwtString string, err error) {
 	key, err := ParsePrivateKeyFromPEM(privateKeyPEM)
 	if err != nil {
@@ -128,7 +128,7 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[mi
 	for svc, c := range servicesAndClaims {
 		if len(c) == 0 {
 			switch svc {
-			case misc.Channels:
+			case astarteservices.Channels:
 				c = []string{"JOIN::.*", "WATCH::.*"}
 			default:
 				c = []string{".*::.*"}
@@ -136,17 +136,17 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[mi
 		}
 
 		switch svc {
-		case misc.AppEngine:
+		case astarteservices.AppEngine:
 			claims.AppEngineAPI = c
-		case misc.Channels:
+		case astarteservices.Channels:
 			claims.Channels = c
-		case misc.Flow:
+		case astarteservices.Flow:
 			claims.Flow = c
-		case misc.Housekeeping:
+		case astarteservices.Housekeeping:
 			claims.Housekeeping = c
-		case misc.Pairing:
+		case astarteservices.Pairing:
 			claims.Pairing = c
-		case misc.RealmManagement:
+		case astarteservices.RealmManagement:
 			claims.RealmManagement = c
 		}
 	}
@@ -182,23 +182,23 @@ func GetJWTAstarteClaims(rawToken string) (AstarteClaims, error) {
 }
 
 // IsJWTAstarteClaimValidForService verifies that an Astarte Token has access to a given Astarte service.
-func IsJWTAstarteClaimValidForService(token string, service misc.AstarteService) (bool, error) {
+func IsJWTAstarteClaimValidForService(token string, service astarteservices.AstarteService) (bool, error) {
 	claims, err := GetJWTAstarteClaims(token)
 	if err != nil {
 		return false, err
 	}
 	switch service {
-	case misc.AppEngine:
+	case astarteservices.AppEngine:
 		return hasAuth(claims.AppEngineAPI), nil
-	case misc.RealmManagement:
+	case astarteservices.RealmManagement:
 		return hasAuth(claims.RealmManagement), nil
-	case misc.Housekeeping:
+	case astarteservices.Housekeeping:
 		return hasAuth(claims.Housekeeping), nil
-	case misc.Pairing:
+	case astarteservices.Pairing:
 		return hasAuth(claims.Pairing), nil
-	case misc.Channels:
+	case astarteservices.Channels:
 		return hasAuth(claims.Channels), nil
-	case misc.Flow:
+	case astarteservices.Flow:
 		return hasAuth(claims.Flow), nil
 	default:
 		return false, fmt.Errorf("unknown Astarte service %s", service.String())
