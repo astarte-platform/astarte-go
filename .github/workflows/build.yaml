@@ -16,8 +16,8 @@ jobs:
     strategy:
       matrix:
         go:
-        - 1.17.x
         - 1.18.x
+        - 1.19.x
         os:
         - ubuntu-latest
         - macos-latest
@@ -33,11 +33,11 @@ jobs:
       run: go build -v ./...
     - name: Test (with coverprofile)
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.17.x'
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.18.x'
     - name: Test (no coverprofile)
       run: go test -v -race ./...
-      if: matrix.os != 'ubuntu-latest' || matrix.go != '1.17.x'
+      if: matrix.os != 'ubuntu-latest' || matrix.go != '1.18.x'
     # Upload coverage report only in one case of the matrix
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
-      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.17.x'
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.18.x'
