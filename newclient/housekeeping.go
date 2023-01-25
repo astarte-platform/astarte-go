@@ -1,4 +1,4 @@
-// Copyright © 2023 SECO Mind Srl
+// Copyright © 2023 SECO Mind srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package newclient
 
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 
 	"moul.io/http2curl"
 )
@@ -28,20 +30,20 @@ type ListRealmsRequest struct {
 
 // ListRealms builds a request to list all realms in the cluster.
 func (c *Client) ListRealms() (AstarteRequest, error) {
-	callURL := makeURL(c.housekeepingURL, "/v1/realms")
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+	callURL, _ := url.Parse(c.housekeepingURL.String())
+	callURL.Path = path.Join(callURL.Path, "/v1/realms")
 
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 	return ListRealmsRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r ListRealmsRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return ListRealmsResponse{res: res}, nil
 }
@@ -58,20 +60,20 @@ type GetRealmRequest struct {
 
 // GetRealm builds a request to get data about a single Realm.
 func (c *Client) GetRealm(realm string) (AstarteRequest, error) {
-	callURL := makeURL(c.housekeepingURL, "/v1/realms/%s", realm)
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+	callURL, _ := url.Parse(c.housekeepingURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/realms/%s", realm))
 
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 	return GetRealmRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r GetRealmRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return GetRealmResponse{res: res}, nil
 }
@@ -86,7 +88,6 @@ type CreateRealmRequest struct {
 	expects int
 }
 
-// nolint:govet
 type newRealmRequestBuilder struct {
 	realmName                    string         `json:"realm_name"`
 	publicKey                    string         `json:jwt_public_key_pem`
@@ -112,12 +113,17 @@ func (c *Client) CreateRealm(opts ...realmOption) (AstarteRequest, error) {
 		return Empty{}, err
 	}
 
-	// TODO check if setting default replicationFactor is needed
+	// TODO check if setting default value is needed
+	// if newRealm.datacenterReplicationFactors == nil && newRealm.replicationFactor == 0 {
+	// 	newRealm.replicationFactor = 1
+	// }
 
-	callURL := makeURL(c.housekeepingURL, "/v1/realms")
+	callURL, _ := url.Parse(c.housekeepingURL.String())
+	callURL.Path = path.Join(callURL.Path, "/v1/realms")
+
+	// TODO check error
 	reqBody, _ := makeBody(newRealm)
-	req := c.makeHTTPrequest(http.MethodPost, callURL, reqBody)
-
+	req := c.makeHTTPrequest(http.MethodPost, callURL, reqBody, c.token)
 	return CreateRealmRequest{req: req, expects: 201}, nil
 }
 
@@ -126,7 +132,7 @@ func (r *newRealmRequestBuilder) validate() error {
 		return ErrRealmNameNotProvided
 	}
 	if r.publicKey == "" {
-		return ErrRealmPublicKeyNotProvided
+		return ErrRealmNameNotProvided
 	}
 	if r.replicationFactor != 0 && r.datacenterReplicationFactors != nil {
 		return ErrTooManyReplicationFactors
@@ -138,7 +144,6 @@ func (r *newRealmRequestBuilder) validate() error {
 }
 
 // Sets the name for a new Realm.
-// nolint:golint,revive
 func WithRealmName(name string) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.realmName = name
@@ -146,7 +151,6 @@ func WithRealmName(name string) realmOption {
 }
 
 // Sets the public key for a new Realm.
-// nolint:golint,revive
 func WithRealmPublicKey(publicKey string) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.publicKey = publicKey
@@ -156,33 +160,28 @@ func WithRealmPublicKey(publicKey string) realmOption {
 // Sets the Replication factor for a new Realm in a single datacenter.
 // Production-ready deployments usually are replicated on more datacenters,
 // but if you need to use just one, set a value at least higher than 1.
-// nolint:golint,revive
 func WithReplicationFactor(replicationFactor int) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.replicationFactor = replicationFactor
-		//nolint:gosimple
 		req.replicationClass = fmt.Sprintf("\"SimpleStrategy\"")
 	}
 }
 
 // Sets the per-datacenter Replication Factor for a new realm. This is the way to go for production deployments.
-// nolint:golint,revive
 func WithDatacenterReplicationFactors(datacenterReplicationFactors map[string]int) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.datacenterReplicationFactors = datacenterReplicationFactors
-		//nolint:gosimple
 		req.replicationClass = fmt.Sprintf("\"NetworkTopologyStrategy\"")
 	}
 }
 
-// nolint:bodyclose
 func (r CreateRealmRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return CreateRealmResponse{res: res}, nil
 }

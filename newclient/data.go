@@ -49,15 +49,15 @@ type mqttv1DeviceInformationResponse struct {
 }
 
 // Housekeeping
-type ListRealmsResponse struct {
+type listRealmsResponse struct {
 	Res *http.Response
 }
 
-type GetRealmResponse struct {
+type getRealmResponse struct {
 	Res *http.Response
 }
 
-type CreateRealmResponse struct {
+type createRealmResponse struct {
 	Res *http.Response
 }
 
