@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/astarte-platform/astarte-go/interfaces"
@@ -27,7 +28,7 @@ import (
 var (
 	testRealmName         = "test"
 	testTokenValue        = "ah yes, the token"
-	testDeviceID          = "1vMeFtaJQF259nMsnis3sw"
+	testDeviceID          = "fhd0WHcgSjWeVqPGKZv_KA"
 	testDeviceIDs         = []string{testDeviceID, "t1J1uQSBQRi_1F3zIrjyYw", "V_pY-ZrLQzWz4iGjGu-NuQ"}
 	testBrokerUrl         = "mqtt://ah.yes.the.broker"
 	testClientCrt         = "ah yes, the certificate"
@@ -65,17 +66,39 @@ var (
 	testTrigger      = `{
 		"name": "ah_yes_a_trigger",
 		"action": {
-		"http_post_url": "http://example.com/my_post_url"
+			"http_post_url": "http://example.com/my_post_url"
 		},
 		"simple_triggers": [
-		{
-		  "type": "device_trigger",
-		  "on": "device_connected",
-		  "device_id": "glO6LullTKmwxebForU-eg"
-		}
+			{
+			"type": "device_trigger",
+			"on": "device_connected",
+			"device_id": "glO6LullTKmwxebForU-eg"
+			}
 		]
 	}`
-	testLinks = map[string]string{"self": fmt.Sprintf("/v1/%s/devices", testRealmName)}
+	testDevicesLinks                     = map[string]string{"self": fmt.Sprintf("/v1/%s/devices", testRealmName)}
+	testServerOwnedInterfaceName         = "ah.yes.a.server.owned.Interface"
+	testServerOwnedPropertyInterfaceName = "ah.yes.a.server.owned.property.Interface"
+	testIndividualDatastreamSnapshot     = `
+	{
+		"anotherTest":{
+		  "value":{
+			 "reception_timestamp":"2023-01-26T15:21:38.986Z",
+			 "timestamp":"2023-01-26T15:21:38.985Z",
+			 "value":0.29031942518908505
+		  }
+		},
+		"yetAnotherTest":{
+		  "value":{
+			 "reception_timestamp":"2023-01-26T15:23:18.485Z",
+			 "timestamp":"2023-01-26T15:23:18.485Z",
+			 "value":0.41505074846327805
+		  }
+		}
+	 }
+	`
+	testGroupName  = "ah yes, a group"
+	testGroupLinks = map[string]string{"self": fmt.Sprintf("/v1/%s/groups/%s/devices", testRealmName, url.PathEscape(testGroupName))}
 )
 
 func astarteAPIMock(w http.ResponseWriter, req *http.Request) {
@@ -174,9 +197,45 @@ func astarteAPIMock(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}
 	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/devices", testRealmName):
-		reply := map[string]interface{}{"data": testDeviceIDs, "links": testLinks}
-		json.NewEncoder(w).Encode(reply)
-
+		reply = map[string]interface{}{"data": testDeviceIDs, "links": testDevicesLinks}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/%s/interfaces/%s", testRealmName, testDeviceID, testInterface):
+		// snapshot
+		data := map[string]any{}
+		_ = json.Unmarshal([]byte(testIndividualDatastreamSnapshot), &data)
+		reply = map[string]interface{}{"data": data}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/devices/%s/interfaces/%s/an/endpoint", testRealmName, testDeviceID, testServerOwnedInterfaceName):
+		// receive data(stream)
+		reply = map[string]interface{}{"data": ""}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/devices/%s/interfaces/%s/other/endpoint", testRealmName, testDeviceID, testServerOwnedInterfaceName):
+		// receive data(stream)
+		reply = map[string]interface{}{"data": ""}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/devices/%s/interfaces/%s/an/endpoint", testRealmName, testDeviceID, testServerOwnedPropertyInterfaceName):
+		if req.Method == http.MethodPut {
+			// set property
+			reply = map[string]interface{}{"data": ""}
+		} else if req.Method == http.MethodDelete {
+			// unset property
+			reply = map[string]interface{}{"data": ""}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/groups", testRealmName):
+		// create group
+		payload := DevicesAndGroup{Devices: testDeviceIDs, GroupName: testGroupName}
+		reply = map[string]interface{}{"data": payload}
+		w.WriteHeader(http.StatusCreated)
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/groups/%s/devices", testRealmName, url.PathEscape(testGroupName)):
+		if req.Method == http.MethodGet {
+			// list devices in a group
+			reply = map[string]interface{}{"data": testDeviceIDs, "links": testGroupLinks}
+		} else if req.Method == http.MethodPost {
+			// add device to group
+			reply = map[string]interface{}{"data": ""}
+			w.WriteHeader(http.StatusCreated)
+		}
+	case req.URL.Path == fmt.Sprintf("/appengine/v1/%s/groups/%s/devices/%s", testRealmName, url.PathEscape(testGroupName), testDeviceID):
+		// remove device from group
+		reply = map[string]interface{}{"data": ""}
+		w.WriteHeader(http.StatusNoContent)
 	}
 	json.NewEncoder(w).Encode(reply)
 }

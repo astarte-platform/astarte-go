@@ -16,45 +16,44 @@ package newclient
 
 import (
 	"io"
+	"net/http"
 
 	"github.com/tidwall/gjson"
 )
 
 // Parses data obtained by performing a request to register a device.
 // Returns the new credentials secret as a string.
-func (r registerDeviceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r RegisterDeviceResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	value := gjson.GetBytes(b, "data.credentials_secret").String()
 	return value, nil
 }
-func (e registerDeviceResponse) Raw() {}
-
-// Parses data obtained by performing a request to unregister a device.
-// The returned values do not matter.
-func (r unregisterDeviceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	return "", nil
+func (r RegisterDeviceResponse) Raw() *http.Response {
+	return r.res
 }
-func (e unregisterDeviceResponse) Raw() {}
 
 // Parses data obtained by performing a request to for a new device certificate.
 // Returns the new device certificate as a PEM-encoded string.
-func (r newDeviceCertificateResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r NewDeviceCertificateResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	value := gjson.GetBytes(b, "data.client_crt").String()
 	return value, nil
 }
-func (e newDeviceCertificateResponse) Raw() {}
+func (r NewDeviceCertificateResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request for connection information
 // for a newly registered device.
 // Returns the Astarte broker URL as a string.
-func (r mqttv1DeviceInformationResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r Mqttv1DeviceInformationResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	value := gjson.GetBytes(b, "data.broker_url").String()
 	return value, nil
 }
-func (e mqttv1DeviceInformationResponse) Raw() {}
+func (r Mqttv1DeviceInformationResponse) Raw() *http.Response {
+	return r.res
+}

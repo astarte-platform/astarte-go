@@ -16,92 +16,148 @@ package newclient
 
 import (
 	"net/http"
+
+	"github.com/astarte-platform/astarte-go/interfaces"
 )
 
 type AstarteResponse interface {
 	// Parse reads the AstarteResponse returned by Run and returns either a well-typed
 	// response payload or an error.
 	Parse() (any, error)
-	Raw()
+	Raw() *http.Response
 }
-
-// Used to represent an errror or an empty response.
-type Empty struct{}
 
 func (e Empty) Parse() (any, error) { return nil, nil }
-func (e Empty) Raw()                {}
+func (e Empty) Raw() *http.Response { return nil }
 
 // Pairing
-type registerDeviceResponse struct {
-	Res *http.Response
+
+type RegisterDeviceResponse struct {
+	res *http.Response
 }
 
-type unregisterDeviceResponse struct {
-	Res *http.Response
+type NewDeviceCertificateResponse struct {
+	res *http.Response
 }
 
-type newDeviceCertificateResponse struct {
-	Res *http.Response
-}
-
-type mqttv1DeviceInformationResponse struct {
-	Res *http.Response
+type Mqttv1DeviceInformationResponse struct {
+	res *http.Response
 }
 
 // Housekeeping
-type listRealmsResponse struct {
-	Res *http.Response
+
+type ListRealmsResponse struct {
+	res *http.Response
 }
 
-type getRealmResponse struct {
-	Res *http.Response
+type GetRealmResponse struct {
+	res *http.Response
 }
 
-type createRealmResponse struct {
-	Res *http.Response
+type CreateRealmResponse struct {
+	res *http.Response
 }
 
-// Realm management
-type listInterfacesResponse struct {
-	Res *http.Response
+// Realm Management
+
+type ListInterfacesResponse struct {
+	res *http.Response
 }
 
-type listInterfaceMajorVersionsResponse struct {
-	Res *http.Response
+type ListInterfaceMajorVersionsResponse struct {
+	res *http.Response
 }
 
-type getInterfaceResponse struct {
-	Res *http.Response
+type GetInterfaceResponse struct {
+	res *http.Response
 }
 
-type installInterfaceResponse struct {
-	Res *http.Response
+type InstallInterfaceResponse struct {
+	res *http.Response
 }
 
-type deleteInterfaceResponse struct {
-	Res *http.Response
-}
-type updateInterfaceResponse struct {
-	Res *http.Response
+type ListTriggersResponse struct {
+	res *http.Response
 }
 
-type listTriggersResponse struct {
-	Res *http.Response
+type GetTriggerResponse struct {
+	res *http.Response
 }
 
-type getTriggerResponse struct {
-	Res *http.Response
+type InstallTriggerResponse struct {
+	res *http.Response
 }
 
-type installTriggerResponse struct {
-	Res *http.Response
-}
-
-type deleteTriggerResponse struct {
-	Res *http.Response
-}
+// AppEngine
 
 type GetNextDeviceListPageResponse struct {
-	Res       *http.Response
+	res       *http.Response
 	paginator *Paginator
+}
+
+type GetDeviceIDFromAliasResponse struct {
+	res *http.Response
+}
+
+type GetDeviceDetailsResponse struct {
+	res *http.Response
+}
+
+type GetDeviceStatsResponse struct {
+	res *http.Response
+}
+
+type ListDeviceInterfacesResponse struct {
+	res *http.Response
+}
+
+type ListDeviceAliasesResponse struct {
+	res *http.Response
+}
+
+type AddDeviceAliasResponse struct {
+	res *http.Response
+}
+
+type ListDeviceAttributesResponse struct {
+	res *http.Response
+}
+
+type GetNextDatastreamPageResponse struct {
+	res       *http.Response
+	paginator *Paginator
+}
+
+type GetDatastreamSnapshotResponse struct {
+	res         *http.Response
+	aggregation interfaces.AstarteInterfaceAggregation
+}
+
+type GetPropertiesResponse struct {
+	res *http.Response
+}
+
+type ListGroupsResponse struct {
+	res *http.Response
+}
+
+type CreateGroupResponse struct {
+	res *http.Response
+}
+
+// General
+
+type NoDataResponse struct {
+	res *http.Response
+}
+
+// Parses data obtained by performing a request to Astarte which does not return data.
+// The returned values do not matter.
+func (r NoDataResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	return "", nil
+}
+
+func (r NoDataResponse) Raw() *http.Response {
+	return r.res
 }

@@ -17,6 +17,7 @@ package newclient
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/tidwall/gjson"
 )
@@ -33,7 +34,9 @@ func (r ListRealmsResponse) Parse() (any, error) {
 	}
 	return ret, nil
 }
-func (r ListRealmsResponse) Raw() {}
+func (r ListRealmsResponse) Raw() *http.Response {
+	return r.res
+}
 
 // RealmDetails represents details of a single Realm.
 type RealmDetails struct {
@@ -56,7 +59,9 @@ func (r GetRealmResponse) Parse() (any, error) {
 	return ret, nil
 
 }
-func (r GetRealmResponse) Raw() {}
+func (r GetRealmResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to create a realm.
 // Returns the realm's details as a RealmDetails struct.
@@ -69,4 +74,6 @@ func (r CreateRealmResponse) Parse() (any, error) {
 	_ = json.Unmarshal(v, &ret)
 	return ret, nil
 }
-func (r CreateRealmResponse) Raw() {}
+func (r CreateRealmResponse) Raw() *http.Response {
+	return r.res
+}

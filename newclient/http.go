@@ -10,19 +10,19 @@ import (
 )
 
 type AstarteRequest interface {
-	// Run executes an astarteRequest that was built using functions from the client package.
-	// To retrive the result, see the data.Parse function
+	// Run executes an astarteRequest that was built using functions from this package.
+	// To retrive the result, see the Parse function.
 	Run(c *Client) (AstarteResponse, error)
 	// ToCurl returns the curl command equivalent to the provided astarteRequest.
 	// This does not execute neither the request nor the command.
 	ToCurl(c *Client) string
 }
 
-// This empty struct is there just for errors, method implementations are bogus
-type empty struct{}
+// The Empty struct represent errors, method implementations are bogus
+type Empty struct{}
 
-func (r empty) Run(c *Client) (AstarteResponse, error) { return Empty{}, nil }
-func (r empty) ToCurl(c *Client) string                     { return "" }
+func (r Empty) Run(c *Client) (AstarteResponse, error) { return Empty{}, nil }
+func (r Empty) ToCurl(c *Client) string                { return "" }
 
 func (c *Client) makeHTTPrequest(method string, url *url.URL, payload io.Reader, token string) *http.Request {
 	return c.makeHTTPrequestWithContentType(method, url, payload, token, "application/json")

@@ -31,7 +31,7 @@ type getMQTTv1CertificatePayload struct {
 	CSR string `json:"csr"`
 }
 
-type registerDeviceRequest struct {
+type RegisterDeviceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -45,26 +45,26 @@ func (c *Client) RegisterDevice(realm string, deviceID string) (AstarteRequest, 
 	// TODO check err
 	payload, _ := makeBody(registerDevicePayload{HwID: deviceID})
 	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
-	return registerDeviceRequest{req: req, expects: 201}, nil
+	return RegisterDeviceRequest{req: req, expects: 201}, nil
 }
 
-func (r registerDeviceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r RegisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return registerDeviceResponse{Res: res}, nil
+	return RegisterDeviceResponse{res: res}, nil
 }
 
-func (r registerDeviceRequest) ToCurl(c *Client) string {
+func (r RegisterDeviceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type unregisterDeviceRequest struct {
+type UnregisterDeviceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -77,26 +77,26 @@ func (c *Client) UnregisterDevice(realm string, deviceID string) (AstarteRequest
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/agent/devices/%s", realm, deviceID))
 
 	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil, c.token)
-	return unregisterDeviceRequest{req: req, expects: 204}, nil
+	return UnregisterDeviceRequest{req: req, expects: 204}, nil
 }
 
-func (r unregisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r UnregisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return unregisterDeviceResponse{Res: res}, nil
+	return NoDataResponse{res: res}, nil
 }
 
-func (r unregisterDeviceRequest) ToCurl(c *Client) string {
+func (r UnregisterDeviceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type newDeviceCertificateRequest struct {
+type NewDeviceCertificateRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -112,26 +112,26 @@ func (c *Client) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, csr string
 	payload, _ := makeBody(getMQTTv1CertificatePayload{CSR: csr})
 	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
 
-	return newDeviceCertificateRequest{req: req, expects: 201}, nil
+	return NewDeviceCertificateRequest{req: req, expects: 201}, nil
 }
 
-func (r newDeviceCertificateRequest) Run(c *Client) (AstarteResponse, error) {
+func (r NewDeviceCertificateRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return unregisterDeviceResponse{Res: res}, nil
+	return NoDataResponse{res: res}, nil
 }
 
-func (r newDeviceCertificateRequest) ToCurl(c *Client) string {
+func (r NewDeviceCertificateRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type mqttv1DeviceInformationRequest struct {
+type Mqttv1DeviceInformationRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -146,21 +146,21 @@ func (c *Client) GetMQTTv1ProtocolInformationForDevice(realm, deviceID string) (
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 
-	return mqttv1DeviceInformationRequest{req: req, expects: 200}, nil
+	return Mqttv1DeviceInformationRequest{req: req, expects: 200}, nil
 }
 
-func (r mqttv1DeviceInformationRequest) Run(c *Client) (AstarteResponse, error) {
+func (r Mqttv1DeviceInformationRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return mqttv1DeviceInformationResponse{Res: res}, nil
+	return Mqttv1DeviceInformationResponse{res: res}, nil
 }
 
-func (r mqttv1DeviceInformationRequest) ToCurl(c *Client) string {
+func (r Mqttv1DeviceInformationRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

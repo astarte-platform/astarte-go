@@ -235,10 +235,10 @@ func setDefaults(c *Client) *Client {
 	}
 
 	if c.baseURL != nil {
-		c.appEngineURL, _ = url.Parse(c.baseURL.String()+"/appengine")
-		c.housekeepingURL, _ = url.Parse(c.baseURL.String()+"/housekeeping")
-		c.pairingURL, _ = url.Parse(c.baseURL.String()+"/pairing")
-		c.realmManagementURL, _ = url.Parse(c.baseURL.String()+"/realmmanagement")
+		c.appEngineURL, _ = url.Parse(c.baseURL.String() + "/appengine")
+		c.housekeepingURL, _ = url.Parse(c.baseURL.String() + "/housekeeping")
+		c.pairingURL, _ = url.Parse(c.baseURL.String() + "/pairing")
+		c.realmManagementURL, _ = url.Parse(c.baseURL.String() + "/realmmanagement")
 	}
 
 	return c

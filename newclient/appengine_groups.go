@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package newclient
 
 import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 
 	"github.com/astarte-platform/astarte-go/misc"
 	"moul.io/http2curl"
@@ -40,20 +41,21 @@ type ListGroupsRequest struct {
 
 // ListGroups builds a request to list the groups in a Realm.
 func (c *Client) ListGroups(realm string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/groups", realm)
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
+
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 
 	return ListGroupsRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r ListGroupsRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return ListGroupsResponse{res: res}, nil
 }
@@ -77,21 +79,21 @@ func (c *Client) CreateGroup(realm, groupName string, deviceIDList []string) (As
 		}
 	}
 
-	callURL := makeURL(c.appEngineURL, "/v1/%s/groups", realm)
-	payload, _ := makeBody(DevicesAndGroup{GroupName: groupName, Devices: deviceIDList})
-	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
 
+	payload, _ := makeBody(DevicesAndGroup{GroupName: groupName, Devices: deviceIDList})
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
 	return CreateGroupRequest{req: req, expects: 201}, nil
 }
 
-// nolint:bodyclose
 func (r CreateGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return CreateGroupResponse{res: res}, nil
 }
@@ -103,7 +105,9 @@ func (r CreateGroupRequest) ToCurl(c *Client) string {
 
 // ListGroupDevices builds a paginator to request a list of the devices that belong to a group.
 func (c *Client) ListGroupDevices(realm, groupName string, pageSize int, format DeviceResultFormat) (Paginator, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName))
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
+
 	paginator, err := c.GetDeviceListPaginator(realm, pageSize, format)
 	if err != nil {
 		return &DeviceListPaginator{}, err
@@ -127,21 +131,22 @@ func (c *Client) AddDeviceToGroup(realm, groupName, deviceID string) (AstarteReq
 		return Empty{}, ErrInvalidDeviceID(deviceID)
 	}
 
-	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName))
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
+
 	payload, _ := makeBody(deviceIDPayload{Device: deviceID})
-	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
 
 	return AddDeviceToGroupRequest{req: req, expects: 201}, nil
 }
 
-// nolint:bodyclose
 func (r AddDeviceToGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return NoDataResponse{res: res}, nil
 }
@@ -163,20 +168,22 @@ func (c *Client) RemoveDeviceFromGroup(realm, groupName, deviceID string) (Astar
 		return Empty{}, ErrInvalidDeviceID(deviceID)
 	}
 
-	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices/%s", realm, url.PathEscape(groupName), deviceID)
-	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices/%s", realm, url.PathEscape(groupName), deviceID))
+
+	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil, c.token)
 
 	return RemoveDeviceFromGroupRequest{req: req, expects: 204}, nil
 }
 
-// nolint:bodyclose
 func (r RemoveDeviceFromGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return Empty{}, ErrDifferentStatusCode(r.expects, res.StatusCode)
+
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return NoDataResponse{res: res}, nil
 }

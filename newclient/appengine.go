@@ -1,23 +1,10 @@
-// Copyright © 2023 SECO Mind Srl
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package client
+package newclient
 
 import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 
 	"moul.io/http2curl"
 )
@@ -39,8 +26,13 @@ const (
 // The paginator can return different result formats depending on the format
 // parameter.
 func (c *Client) GetDeviceListPaginator(realm string, pageSize int, format DeviceResultFormat) (Paginator, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/devices", realm)
+	callURL, err := url.Parse(c.appEngineURL.String())
+	if err != nil {
+		return &DeviceListPaginator{}, err
+	}
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices", realm))
 	query := url.Values{}
+
 	deviceListPaginator := DeviceListPaginator{
 		baseURL:     callURL,
 		nextQuery:   query,
@@ -49,7 +41,6 @@ func (c *Client) GetDeviceListPaginator(realm string, pageSize int, format Devic
 		client:      c,
 		hasNextPage: true,
 	}
-
 	return &deviceListPaginator, nil
 }
 
@@ -61,20 +52,19 @@ type GetDeviceDetailsRequest struct {
 // GetDevice builds a request to return the DeviceDetails of a single Device in the Realm.
 func (c *Client) GetDeviceDetails(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
-
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 	return GetDeviceDetailsRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r GetDeviceDetailsRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return GetDeviceDetailsResponse{res: res}, nil
 }
@@ -96,17 +86,16 @@ func (c *Client) GetDeviceIDFromAlias(realm string, deviceAlias string) (Astarte
 		return Empty{}, nil
 	}
 	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
-	return GetDeviceIDFromAliasRequest(getDeviceDetailsRequest), nil
+	return GetDeviceIDFromAliasRequest{req: getDeviceDetailsRequest.req, expects: getDeviceDetailsRequest.expects}, nil
 }
 
-// nolint:bodyclose
 func (r GetDeviceIDFromAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return GetDeviceIDFromAliasResponse{res: res}, nil
 }
@@ -126,20 +115,20 @@ type ListDeviceInterfacesRequest struct {
 func (c *Client) ListDeviceInterfaces(realm string, deviceIdentifier string,
 	deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s/interfaces", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 	return ListDeviceInterfacesRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r ListDeviceInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return ListDeviceInterfacesResponse{res: res}, nil
 }
@@ -155,27 +144,26 @@ type GetDevicesStatsRequest struct {
 
 // GetDevicesStats builds a request to return the DevicesStats of a Realm.
 func (c *Client) GetDevicesStats(realm string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/stats/devices", realm)
-	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/stats/devices", realm))
 
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
 	return GetDevicesStatsRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r GetDevicesStatsRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return GetDeviceStatsResponse{res: res}, nil
 }
 
 func (r GetDevicesStatsRequest) ToCurl(c *Client) string {
-	command, _ := http2curl.GetCurlCommand(r.req)
-	return fmt.Sprint(command)
+	return ""
 }
 
 type ListDeviceAliasesRequest struct {
@@ -184,24 +172,22 @@ type ListDeviceAliasesRequest struct {
 }
 
 // ListDeviceAliases builds a request to list all aliases of a Device.
-func (c *Client) ListDeviceAliases(realm string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
-	getDeviceRequest, err := c.GetDeviceDetails(realm, deviceIdentifier, deviceIdentifierType)
+func (c *Client) ListDeviceAliases(realm string, deviceAlias string) (AstarteRequest, error) {
+	getDeviceRequest, err := c.GetDeviceDetails(realm, deviceAlias, AstarteDeviceAlias)
 	if err != nil {
 		return Empty{}, nil
 	}
 	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
-	return ListDeviceAliasesRequest(getDeviceDetailsRequest), nil
+	return ListDeviceAliasesRequest{req: getDeviceDetailsRequest.req, expects: getDeviceDetailsRequest.expects}, nil
 }
 
-// nolint:bodyclose
 func (r ListDeviceAliasesRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return ListDeviceAliasesResponse{res: res}, nil
 }
@@ -219,29 +205,31 @@ type AddDeviceAliasRequest struct {
 
 // AddDeviceAlias builds a request to add an Alias to a Device
 func (c *Client) AddDeviceAlias(realm string, deviceID string, aliasTag string, deviceAlias string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/devices/%s", realm, deviceID)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 	aliasMap := map[string]map[string]string{"aliases": {aliasTag: deviceAlias}}
+
 	payload, _ := makeBody(aliasMap)
-	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, c.token, "application/merge-patch+json")
 
 	return AddDeviceAliasRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r AddDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
-
-	return NoDataResponse{res: res}, nil
+	// no response expected
+	return AddDeviceAliasResponse{res: res}, nil
 }
 
 func (r AddDeviceAliasRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
+	// TODO check
 	return fmt.Sprint(command)
 }
 
@@ -252,24 +240,25 @@ type DeleteDeviceAliasRequest struct {
 
 // DeleteDeviceAlias builds a request to delete an Alias from a Device based on the Alias' tag.
 func (c *Client) DeleteDeviceAlias(realm string, deviceID string, aliasTag string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/devices/%s", realm, deviceID)
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
 	// We're using map[string]interface{} rather than map[string]string since we want to have null
 	// rather than an empty string in the JSON payload, and this is the only way.
 	aliasMap := map[string]map[string]interface{}{"aliases": {aliasTag: nil}}
 	payload, _ := makeBody(aliasMap)
-	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, c.token, "application/merge-patch+json")
 
 	return DeleteDeviceAliasRequest{req: req, expects: 200}, nil
+
 }
 
-// nolint:bodyclose
 func (r DeleteDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return NoDataResponse{res: res}, nil
 }
@@ -288,22 +277,23 @@ type InhibitDeviceRequest struct {
 // SetDeviceInhibited builds a request to set the Credentials Inhibition state of a Device.
 func (c *Client) SetDeviceInhibited(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, inhibit bool) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 	credentialsMap := map[string]bool{"credentials_inhibited": inhibit}
 	payload, _ := makeBody(credentialsMap)
-	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, c.token, "application/merge-patch+json")
 
 	return InhibitDeviceRequest{req: req, expects: 200}, nil
+
 }
 
-// nolint:bodyclose
 func (r InhibitDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	// no response expected
 	return NoDataResponse{res: res}, nil
@@ -327,17 +317,16 @@ func (c *Client) ListDeviceAttributes(realm, deviceIdentifier string, deviceIden
 		return Empty{}, nil
 	}
 	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
-	return ListDeviceAttributesRequest(getDeviceDetailsRequest), nil
+	return ListDeviceAttributesRequest{req: getDeviceDetailsRequest.req, expects: getDeviceDetailsRequest.expects}, nil
 }
 
-// nolint:bodyclose
 func (r ListDeviceAttributesRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return ListDeviceAttributesResponse{res: res}, nil
 }
@@ -355,22 +344,22 @@ type SetDeviceAttributeRequest struct {
 // SetDeviceAttribute builds a request to set an Attribute key to a certain value for a Device
 func (c *Client) SetDeviceAttribute(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributeKey, attributeValue string) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 	attributeMap := map[string]map[string]string{"attributes": {attributeKey: attributeValue}}
 	payload, _ := makeBody(attributeMap)
-	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, c.token, "application/merge-patch+json")
 
 	return SetDeviceAttributeRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r SetDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return NoDataResponse{res: res}, nil
 }
@@ -388,24 +377,24 @@ type DeleteDeviceAttributeRequest struct {
 // DeleteDeviceAttribute builds a request to delete an Attribute key and its value from a Device
 func (c *Client) DeleteDeviceAttribute(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributeKey string) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	callURL, _ := url.Parse(c.appEngineURL.String())
+	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType)))
 	// We're using map[string]interface{} rather than map[string]string since we want to have null
 	// rather than an empty string in the JSON payload, and this is the only way.
 	attributeMap := map[string]map[string]interface{}{"attributes": {attributeKey: nil}}
 	payload, _ := makeBody(attributeMap)
-	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, c.token, "application/merge-patch+json")
 
 	return DeleteDeviceAttributeRequest{req: req, expects: 200}, nil
 }
 
-// nolint:bodyclose
 func (r DeleteDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
 		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return runAstarteRequestError(res, r.expects)
+		return Empty{}, ErrDifferentStatusCode
 	}
 	return NoDataResponse{res: res}, nil
 }

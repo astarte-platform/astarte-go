@@ -24,7 +24,7 @@ import (
 	"moul.io/http2curl"
 )
 
-type listInterfacesRequest struct {
+type ListInterfacesRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -35,26 +35,26 @@ func (c *Client) ListInterfaces(realm string) (AstarteRequest, error) {
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces", realm))
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
-	return listInterfacesRequest{req: req, expects: 200}, nil
+	return ListInterfacesRequest{req: req, expects: 200}, nil
 }
 
-func (r listInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
+func (r ListInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return listInterfacesResponse{Res: res}, nil
+	return ListInterfacesResponse{res: res}, nil
 }
 
-func (r listInterfacesRequest) ToCurl(c *Client) string {
+func (r ListInterfacesRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type listInterfaceMajorVersionsRequest struct {
+type ListInterfaceMajorVersionsRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -65,26 +65,26 @@ func (c *Client) ListInterfaceMajorVersions(realm string, interfaceName string) 
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s", realm, interfaceName))
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
-	return listInterfaceMajorVersionsRequest{req: req, expects: 200}, nil
+	return ListInterfaceMajorVersionsRequest{req: req, expects: 200}, nil
 }
 
-func (r listInterfaceMajorVersionsRequest) Run(c *Client) (AstarteResponse, error) {
+func (r ListInterfaceMajorVersionsRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return listInterfaceMajorVersionsResponse{Res: res}, nil
+	return ListInterfaceMajorVersionsResponse{res: res}, nil
 }
 
-func (r listInterfaceMajorVersionsRequest) ToCurl(c *Client) string {
+func (r ListInterfaceMajorVersionsRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type getInterfaceRequest struct {
+type GetInterfaceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -95,26 +95,26 @@ func (c *Client) GetInterface(realm string, interfaceName string, interfaceMajor
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
-	return getInterfaceRequest{req: req, expects: 200}, nil
+	return GetInterfaceRequest{req: req, expects: 200}, nil
 }
 
-func (r getInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r GetInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return getInterfaceResponse{Res: res}, nil
+	return GetInterfaceResponse{res: res}, nil
 }
 
-func (r getInterfaceRequest) ToCurl(c *Client) string {
+func (r GetInterfaceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type installInterfaceRequest struct {
+type InstallInterfaceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -126,26 +126,26 @@ func (c *Client) InstallInterface(realm string, interfacePayload interfaces.Asta
 
 	payload, _ := makeBody(interfacePayload)
 	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
-	return installInterfaceRequest{req: req, expects: 201}, nil
+	return InstallInterfaceRequest{req: req, expects: 201}, nil
 }
 
-func (r installInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r InstallInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return installInterfaceResponse{Res: res}, nil
+	return InstallInterfaceResponse{res: res}, nil
 }
 
-func (r installInterfaceRequest) ToCurl(c *Client) string {
+func (r InstallInterfaceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type deleteInterfaceRequest struct {
+type DeleteInterfaceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -156,26 +156,26 @@ func (c *Client) DeleteInterface(realm string, interfaceName string, interfaceMa
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/interfaces/%s/%v", realm, interfaceName, interfaceMajor))
 
 	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil, c.token)
-	return deleteInterfaceRequest{req: req, expects: 204}, nil
+	return DeleteInterfaceRequest{req: req, expects: 204}, nil
 }
 
-func (r deleteInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r DeleteInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return deleteInterfaceResponse{Res: res}, nil
+	return NoDataResponse{res: res}, nil
 }
 
-func (r deleteInterfaceRequest) ToCurl(c *Client) string {
+func (r DeleteInterfaceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type updateInterfaceRequest struct {
+type UpdateInterfaceRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -187,26 +187,26 @@ func (c *Client) UpdateInterface(realm string, interfaceName string, interfaceMa
 
 	payload, _ := makeBody(interfacePayload)
 	req := c.makeHTTPrequest(http.MethodPut, callURL, payload, c.token)
-	return updateInterfaceRequest{req: req, expects: 204}, nil
+	return UpdateInterfaceRequest{req: req, expects: 204}, nil
 }
 
-func (r updateInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
+func (r UpdateInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return updateInterfaceResponse{Res: res}, nil
+	return NoDataResponse{res: res}, nil
 }
 
-func (r updateInterfaceRequest) ToCurl(c *Client) string {
+func (r UpdateInterfaceRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type listTriggersRequest struct {
+type ListTriggersRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -217,26 +217,26 @@ func (c *Client) ListTriggers(realm string) (AstarteRequest, error) {
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers", realm))
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
-	return listTriggersRequest{req: req, expects: 200}, nil
+	return ListTriggersRequest{req: req, expects: 200}, nil
 }
 
-func (r listTriggersRequest) Run(c *Client) (AstarteResponse, error) {
+func (r ListTriggersRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return listTriggersResponse{Res: res}, nil
+	return ListTriggersResponse{res: res}, nil
 }
 
-func (r listTriggersRequest) ToCurl(c *Client) string {
+func (r ListTriggersRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type getTriggerRequest struct {
+type GetTriggerRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -247,26 +247,26 @@ func (c *Client) GetTrigger(realm string, triggerName string) (AstarteRequest, e
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers/%s", realm, triggerName))
 
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil, c.token)
-	return getTriggerRequest{req: req, expects: 200}, nil
+	return GetTriggerRequest{req: req, expects: 200}, nil
 }
 
-func (r getTriggerRequest) Run(c *Client) (AstarteResponse, error) {
+func (r GetTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return getTriggerResponse{Res: res}, nil
+	return GetTriggerResponse{res: res}, nil
 }
 
-func (r getTriggerRequest) ToCurl(c *Client) string {
+func (r GetTriggerRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type installTriggerRequest struct {
+type InstallTriggerRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -278,26 +278,26 @@ func (c *Client) InstallTrigger(realm string, triggerPayload any) (AstarteReques
 
 	payload, _ := makeBody(triggerPayload)
 	req := c.makeHTTPrequest(http.MethodPost, callURL, payload, c.token)
-	return installTriggerRequest{req: req, expects: 201}, nil
+	return InstallTriggerRequest{req: req, expects: 201}, nil
 }
 
-func (r installTriggerRequest) Run(c *Client) (AstarteResponse, error) {
+func (r InstallTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return installTriggerResponse{Res: res}, nil
+	return InstallTriggerResponse{res: res}, nil
 }
 
-func (r installTriggerRequest) ToCurl(c *Client) string {
+func (r InstallTriggerRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
 
-type deleteTriggerRequest struct {
+type DeleteTriggerRequest struct {
 	req     *http.Request
 	expects int
 }
@@ -308,21 +308,21 @@ func (c *Client) DeleteTrigger(realm string, triggerName string) (AstarteRequest
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/triggers/%s", realm, triggerName))
 
 	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil, c.token)
-	return deleteTriggerRequest{req: req, expects: 204}, nil
+	return DeleteTriggerRequest{req: req, expects: 204}, nil
 }
 
-func (r deleteTriggerRequest) Run(c *Client) (AstarteResponse, error) {
+func (r DeleteTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return empty{}, err
+		return Empty{}, err
 	}
 	if res.StatusCode != r.expects {
-		return empty{}, ErrDifferentStatusCode
+		return Empty{}, ErrDifferentStatusCode
 	}
-	return deleteTriggerResponse{Res: res}, nil
+	return NoDataResponse{res: res}, nil
 }
 
-func (r deleteTriggerRequest) ToCurl(c *Client) string {
+func (r DeleteTriggerRequest) ToCurl(c *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

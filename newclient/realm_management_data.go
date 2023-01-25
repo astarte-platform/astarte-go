@@ -17,6 +17,7 @@ package newclient
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 
 	"github.com/astarte-platform/astarte-go/interfaces"
 	"github.com/tidwall/gjson"
@@ -24,35 +25,39 @@ import (
 
 // Parses data obtained by performing a request to list interfaces in a realm.
 // Returns the list of interface names as an array of strings.
-func (r listInterfacesResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r ListInterfacesResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	ret := []string{}
 	for _, v := range gjson.GetBytes(b, "data").Array() {
 		ret = append(ret, v.Str)
 	}
 	return ret, nil
 }
-func (r listInterfacesResponse) Raw() {}
+func (r ListInterfacesResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to list an interface's major versions.
 // Returns the list of versions as an array of ints.
-func (r listInterfaceMajorVersionsResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r ListInterfaceMajorVersionsResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	ret := []int{}
 	for _, v := range gjson.GetBytes(b, "data").Array() {
 		ret = append(ret, int(v.Num))
 	}
 	return ret, nil
 }
-func (r listInterfaceMajorVersionsResponse) Raw() {}
+func (r ListInterfaceMajorVersionsResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to retrieve an interface.
 // Returns the interface as an interfaces.AstarteInterface.
-func (r getInterfaceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r GetInterfaceResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := interfaces.AstarteInterface{}
 	// TODO check err
@@ -60,13 +65,15 @@ func (r getInterfaceResponse) Parse() (any, error) {
 	return interfaces.EnsureInterfaceDefaults(ret), nil
 
 }
-func (r getInterfaceResponse) Raw() {}
+func (r GetInterfaceResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to install an interface.
 // Returns the interface as an interfaces.AstarteInterface.
-func (r installInterfaceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r InstallInterfaceResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := interfaces.AstarteInterface{}
 	// TODO check err
@@ -74,44 +81,30 @@ func (r installInterfaceResponse) Parse() (any, error) {
 	return interfaces.EnsureInterfaceDefaults(ret), nil
 }
 
-func (r installInterfaceResponse) Raw() {}
-
-// Parses data obtained by performing a request to delete an interface.
-// The returned values do not matter.
-func (r deleteInterfaceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	return "", nil
+func (r InstallInterfaceResponse) Raw() *http.Response {
+	return r.res
 }
-
-func (r deleteInterfaceResponse) Raw() {}
-
-// Parses data obtained by performing a request to update an interface.
-// The returned values do not matter.
-func (r updateInterfaceResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	return "", nil
-}
-
-func (r updateInterfaceResponse) Raw() {}
 
 // Parses data obtained by performing a request to list triggers in a realm.
 // Returns the list of triggers names as an array of strings.
-func (r listTriggersResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r ListTriggersResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	ret := []string{}
 	for _, v := range gjson.GetBytes(b, "data").Array() {
 		ret = append(ret, v.Str)
 	}
 	return ret, nil
 }
-func (r listTriggersResponse) Raw() {}
+func (r ListTriggersResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to retrieve a trigger.
 // Returns the trigger payload as a map[string]any.
-func (r getTriggerResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r GetTriggerResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := map[string]any{}
 	err := json.Unmarshal(v, &ret)
@@ -121,13 +114,15 @@ func (r getTriggerResponse) Parse() (any, error) {
 	return ret, nil
 }
 
-func (r getTriggerResponse) Raw() {}
+func (r GetTriggerResponse) Raw() *http.Response {
+	return r.res
+}
 
 // Parses data obtained by performing a request to install a trigger.
 // Returns the trigger payload as a map[string]any.
-func (r installTriggerResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	b, _ := io.ReadAll(r.Res.Body)
+func (r InstallTriggerResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := map[string]any{}
 	err := json.Unmarshal(v, &ret)
@@ -137,13 +132,6 @@ func (r installTriggerResponse) Parse() (any, error) {
 	return ret, nil
 }
 
-func (r installTriggerResponse) Raw() {}
-
-// Parses data obtained by performing a request to delete a trigger.
-// The returned values do not matter.
-func (r deleteTriggerResponse) Parse() (any, error) {
-	defer r.Res.Body.Close()
-	return "", nil
+func (r InstallTriggerResponse) Raw() *http.Response {
+	return r.res
 }
-
-func (r deleteTriggerResponse) Raw() {}
