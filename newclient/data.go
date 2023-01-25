@@ -62,42 +62,42 @@ type createRealmResponse struct {
 }
 
 // Realm management
-type ListInterfacesResponse struct {
+type listInterfacesResponse struct {
 	Res *http.Response
 }
 
-type ListInterfaceMajorVersionsResponse struct {
+type listInterfaceMajorVersionsResponse struct {
 	Res *http.Response
 }
 
-type GetInterfaceResponse struct {
+type getInterfaceResponse struct {
 	Res *http.Response
 }
 
-type InstallInterfaceResponse struct {
+type installInterfaceResponse struct {
 	Res *http.Response
 }
 
-type DeleteInterfaceResponse struct {
+type deleteInterfaceResponse struct {
 	Res *http.Response
 }
-type UpdateInterfaceResponse struct {
-	Res *http.Response
-}
-
-type ListTriggersResponse struct {
+type updateInterfaceResponse struct {
 	Res *http.Response
 }
 
-type GetTriggerResponse struct {
+type listTriggersResponse struct {
 	Res *http.Response
 }
 
-type InstallTriggerResponse struct {
+type getTriggerResponse struct {
 	Res *http.Response
 }
 
-type DeleteTriggerResponse struct {
+type installTriggerResponse struct {
+	Res *http.Response
+}
+
+type deleteTriggerResponse struct {
 	Res *http.Response
 }
 
