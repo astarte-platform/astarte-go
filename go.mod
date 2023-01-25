@@ -14,4 +14,5 @@ require github.com/smartystreets/goconvey v1.7.2 // indirect
 require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
+	moul.io/http2curl v1.0.0
 )
