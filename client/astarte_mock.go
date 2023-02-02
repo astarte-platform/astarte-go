@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package newclient
+package client
 
 import (
 	"encoding/json"
@@ -247,7 +247,7 @@ func getTestContext(t *testing.T) (*Client, *httptest.Server) {
 	// Use Client & URL from our local test server
 	client, err := New(
 		WithBaseURL(server.URL),
-		WithToken(testTokenValue),
+		WithJWT(testTokenValue),
 		WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatal(err)

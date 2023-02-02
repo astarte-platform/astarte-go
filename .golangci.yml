@@ -120,7 +120,7 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    # - bodyclose # too many false positives (we close the response in Parse, but generate it in Run)
+    - bodyclose
     - dupl
     - funlen
     - gochecknoinits
@@ -134,7 +134,7 @@ linters:
     - goprintffuncname
     - gosec
     #- lll
-    # - fieldalignment # Disabled temporairly
+    # - fieldalignment # TODO: Disabled temporairly, enable it back when memory aligning fields
     - misspell
     - prealloc
     - exportloopref
@@ -173,7 +173,14 @@ issues:
     - linters:
         - gocyclo
         - funlen
+        - gocognit
       source: "^func validateType"
+      
+    - linters:
+        - gocyclo
+        - funlen
+        - gocognit
+      source: "^func validate"
 
     # We might have some unused boilerplate functions
     - linters:

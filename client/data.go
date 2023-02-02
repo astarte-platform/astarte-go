@@ -1,4 +1,4 @@
-// Copyright © 2023 SECO Mind srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package newclient
+package client
 
 import (
 	"net/http"
@@ -24,6 +24,8 @@ type AstarteResponse interface {
 	// Parse reads the AstarteResponse returned by Run and returns either a well-typed
 	// response payload or an error.
 	Parse() (any, error)
+	// Raw returns the bare http response returned by Run. Note that since this function
+	// does not close the response body, it is up to you to do so.
 	Raw() *http.Response
 }
 

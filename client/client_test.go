@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package newclient
+package client
 
 import (
 	"testing"
@@ -20,15 +20,19 @@ import (
 
 func TestClientValidation(t *testing.T) {
 	// A standard client
-	if _, err := New(WithBaseURL("api.an-astarte.org")); err != nil {
+	if _, err := New(
+		WithBaseURL("api.an-astarte.org"),
+		WithJWT("ah yes, a JWT"),
+	); err != nil {
 		t.Error(err)
 	}
 
 	// Client with conflicting URLs
 	if _, err := New(
 		WithBaseURL("api.an-astarte.org"),
-		WithAppengineURL("a.different.appengine-url.com"),
+		WithAppEngineURL("a.different.appengine-url.com"),
 		WithUserAgent("pippo"),
+		WithJWT("ah yes, a JWT"),
 	); err == nil {
 		t.Error("Conflicting URLs were given to client, but no error found")
 	}
@@ -36,7 +40,33 @@ func TestClientValidation(t *testing.T) {
 	// Invalid URL provided
 	if _, err := New(
 		WithBaseURL("://api.an-astarte.org/thethings"),
+		WithJWT("ah yes, a JWT"),
 	); err == nil {
 		t.Error("Invalid URL provided, but no error found")
+	}
+
+	// Client with both JWT and key
+	if _, err := New(
+		WithBaseURL("api.an-astarte.org"),
+		WithPrivateKey([]byte("ah yes, a private key")),
+		WithJWT("ah yes, a JWT"),
+	); err == nil {
+		t.Error("Both private key and JWT were given to client, but no error found")
+	}
+
+	// Client with both JWT and expiry
+	if _, err := New(
+		WithBaseURL("api.an-astarte.org"),
+		WithJWT("ah yes, a JWT"),
+		WithExpiry(120),
+	); err == nil {
+		t.Error("Both JWT and expiry were given to client, but no error found")
+	}
+
+	// Client no auth
+	if _, err := New(
+		WithBaseURL("api.an-astarte.org"),
+	); err == nil {
+		t.Error("No auth options were given to client, but no error found")
 	}
 }

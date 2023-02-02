@@ -1,4 +1,4 @@
-// Copyright © 2023 SECO Mind srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package newclient
+package client
 
 import (
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/astarte-platform/astarte-go/misc"
 )
+
+const defaultJWTExpiry = 300
 
 type Client struct {
 	baseURL            *url.URL
@@ -29,12 +32,13 @@ type Client struct {
 	pairingURL         *url.URL
 	realmManagementURL *url.URL
 	userAgent          string
-
-	httpClient *http.Client
-	token      string
+	httpClient         *http.Client
+	token              string
+	privateKey         []byte
+	expiry             int
 }
 
-type clientOption = func(c *Client) error
+type Option = func(c *Client) error
 
 // Finally, generics (actually, type constraints)
 type privateKeyProvider interface {
@@ -42,14 +46,12 @@ type privateKeyProvider interface {
 }
 
 // The New function creates a new Astarte API client.
-// If no options are specified, the following is assumed:
+// You must provide at least an Astarte base URL and an auth resource (JWT or private key).
+// If no other options are specified, the following is assumed:
 // - standard Astarte URL hierarchy
 // - standard HTTP client
-// - no JWT token (no call will be authorized)
 // - "astarte-go" as user agent
-// A production-ready client may be created using e.g.:
-// `client.New(client.WithBaseUrl("api.your-astarte.org"), client.WithToken("YOUR_JWT_TOKEN"))``
-func New(options ...clientOption) (*Client, error) {
+func New(options ...Option) (*Client, error) {
 	// We start with a client with bare zero-valued fields
 	c := &Client{}
 
@@ -70,10 +72,10 @@ func New(options ...clientOption) (*Client, error) {
 	return setDefaults(c), nil
 }
 
-// The WithAppengineURL function allows to specify an
+// The WithAppEngineURL function allows to specify an
 // AppEngine URL different from the standard one (e.g. http://localhost:4000).
 // This is not recommendend in production.
-func WithAppengineURL(appEngineURL string) clientOption {
+func WithAppEngineURL(appEngineURL string) Option {
 	return func(c *Client) error {
 		appengine, err := url.Parse(appEngineURL)
 		if err != nil {
@@ -87,7 +89,7 @@ func WithAppengineURL(appEngineURL string) clientOption {
 // The WithHousekeepingURL function allows to specify an
 // Housekeeping URL different from the standard one (e.g. http://localhost:4001).
 // This is not recommendend in production.
-func WithHousekeepingURL(housekeepingURL string) clientOption {
+func WithHousekeepingURL(housekeepingURL string) Option {
 	return func(c *Client) error {
 		housekeeping, err := url.Parse(housekeepingURL)
 		if err != nil {
@@ -101,7 +103,7 @@ func WithHousekeepingURL(housekeepingURL string) clientOption {
 // The WithPairingURL function allows to specify an
 // Pairing URL different from the standard one (e.g. http://localhost:4002).
 // This is not recommendend in production.
-func WithPairingURL(pairingURL string) clientOption {
+func WithPairingURL(pairingURL string) Option {
 	return func(c *Client) error {
 		// check that it's a valid URL
 		pairing, err := url.Parse(pairingURL)
@@ -116,7 +118,7 @@ func WithPairingURL(pairingURL string) clientOption {
 // The WithRealmManagementURL function allows to specify an
 // RealmManagement URL different from the standard one (e.g. http://localhost:4003).
 // This is not recommendend in production.
-func WithRealmManagementURL(realmManagementURL string) clientOption {
+func WithRealmManagementURL(realmManagementURL string) Option {
 	return func(c *Client) error {
 		realmManagement, err := url.Parse(realmManagementURL)
 		if err != nil {
@@ -129,7 +131,7 @@ func WithRealmManagementURL(realmManagementURL string) clientOption {
 
 // The WithBaseURL function allows to specify the Astarte
 // base URL (e.g. api.your-astarte.org)
-func WithBaseURL(baseURL string) clientOption {
+func WithBaseURL(baseURL string) Option {
 	return func(c *Client) error {
 		base, err := url.Parse(baseURL)
 		if err != nil {
@@ -143,16 +145,16 @@ func WithBaseURL(baseURL string) clientOption {
 
 // The WithHTTPClient function allows to specify an httpClient
 // with custom options, e.g. different timeout, or skipTLSVerify
-func WithHTTPClient(httpClient *http.Client) clientOption {
+func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *Client) error {
 		c.httpClient = httpClient
 		return nil
 	}
 }
 
-// The WithToken function allows to specify a JWT
+// The WithJWT function allows to specify a JWT
 // token that the client will use to interact with Astarte.
-func WithToken(token string) clientOption {
+func WithJWT(token string) Option {
 	return func(c *Client) error {
 		c.token = token
 		return nil
@@ -161,7 +163,7 @@ func WithToken(token string) clientOption {
 
 // The WithUserAgent function allows to specify the User Agent
 // that the client will use when making http requests.
-func WithUserAgent(userAgent string) clientOption {
+func WithUserAgent(userAgent string) Option {
 	return func(c *Client) error {
 		c.userAgent = userAgent
 		return nil
@@ -169,56 +171,55 @@ func WithUserAgent(userAgent string) clientOption {
 }
 
 // The WithPrivateKey function allows to specify a realm private key,
-// used internally to generate a valid JWT token to all Astarte APIs with no expiry.
+// used internally to generate a valid JWT token to all Astarte APIs with 5 minutes expiry.
 // The client will use that token to interact with Astarte.
-func WithPrivateKey[T privateKeyProvider](privateKey T) clientOption {
-	return WithPrivateKeyWithTTL(privateKey, 0)
-}
-
-// The WithPrivateKey function allows to specify a realm private key,
-// used internally to generate a valid JWT token to all Astarte APIs with a specified expiry (in seconds).
-// The client will use that token to interact with Astarte.
-func WithPrivateKeyWithTTL[T privateKeyProvider](privateKey T, ttlSeconds int64) clientOption {
-	// Add all types
-	servicesAndClaims := map[misc.AstarteService][]string{
-		misc.AppEngine:       {},
-		misc.Channels:        {},
-		misc.Flow:            {},
-		misc.Housekeeping:    {},
-		misc.Pairing:         {},
-		misc.RealmManagement: {},
-	}
-	return WithPrivateKeyWithClaimsWithTTL(privateKey, servicesAndClaims, 0)
-}
-
-// The WithPrivateKey function allows to specify a realm private key,
-// used internally to generate a valid JWT token with a given set of Astarte claims and
-// a specified expiry (in seconds).
-// The client will use that token to interact with Astarte.
-func WithPrivateKeyWithClaimsWithTTL[T privateKeyProvider](privateKey T, claims map[misc.AstarteService][]string, ttlSeconds int64) clientOption {
+// You can provide either a path (a string) to the key file, or the key itself (a []byte).
+func WithPrivateKey[T privateKeyProvider](privateKey T) Option {
 	return func(c *Client) error {
-		// Golang I hate you so much
 		switch k := any(privateKey).(type) {
 		case string:
 			var err error
-			c.token, err = misc.GenerateAstarteJWTFromKeyFile(k, claims, ttlSeconds)
+			c.privateKey, err = os.ReadFile(k)
 			return err
 		case []byte:
-			var err error
-			c.token, err = misc.GenerateAstarteJWTFromPEMKey(k, claims, ttlSeconds)
-			return err
+			c.privateKey = k
+			return nil
 		default:
 			return ErrNoPrivateKeyProvided
 		}
 	}
 }
 
+// The WithExpiry function allows to specify the expiry (in seconds) for the generated
+// JWT token used internally for communication with all Astarte APIs.
+// The expiry must be less than 5 minutes.
+func WithExpiry(expirySeconds int) Option {
+	return func(c *Client) error {
+		if defaultJWTExpiry < expirySeconds {
+			return ErrTooHighExpiry
+		}
+
+		c.expiry = expirySeconds
+		return nil
+	}
+}
+
+// nolint:gocognit
 func validate(c *Client) error {
 	if c.baseURL != nil && (c.appEngineURL != nil || c.realmManagementURL != nil || c.housekeepingURL != nil || c.pairingURL != nil) {
 		return ErrConflictingUrls
 	}
 	if c.baseURL == nil && c.appEngineURL == nil && c.realmManagementURL == nil && c.housekeepingURL == nil && c.pairingURL == nil {
 		return ErrNoUrlsProvided
+	}
+	if c.token != "" && c.privateKey != nil {
+		return ErrBothJWTAndPrivateKey
+	}
+	if c.token == "" && c.privateKey == nil {
+		return ErrNoAuthProvided
+	}
+	if c.privateKey == nil && c.expiry != 0 {
+		return ErrExpiryButNoPrivateKeyProvided
 	}
 	return nil
 }
@@ -241,5 +242,27 @@ func setDefaults(c *Client) *Client {
 		c.realmManagementURL, _ = url.Parse(c.baseURL.String() + "/realmmanagement")
 	}
 
+	if c.expiry == 0 {
+		c.expiry = defaultJWTExpiry
+	}
+
 	return c
+}
+
+func (c *Client) getJWT() string {
+	// Add all types
+	servicesAndClaims := map[misc.AstarteService][]string{
+		misc.AppEngine:       {},
+		misc.Channels:        {},
+		misc.Flow:            {},
+		misc.Housekeeping:    {},
+		misc.Pairing:         {},
+		misc.RealmManagement: {},
+	}
+	if c.token == "" {
+		// if we're here, we can safely assume that the key was OK
+		token, _ := misc.GenerateAstarteJWTFromPEMKey(c.privateKey, servicesAndClaims, int64(c.expiry))
+		return token
+	}
+	return c.token
 }
