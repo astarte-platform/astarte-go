@@ -6,7 +6,9 @@ run:
   # timeout for analysis, e.g. 30s, 5m, default is 1m
   # Allow 10m, within actions it might take a lot
   timeout: 10m
-
+  # Ignore the beautiful, beautiful Astarte mock file
+  skip-files:
+    - client/astarte_mock.go
 # output configuration options
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
@@ -116,6 +118,7 @@ linters-settings:
     allow-separated-leading-comment: false
 
 linters:
+  disable-all: true
   enable:
     - bodyclose
     - dupl
@@ -125,16 +128,16 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - golint
+    - revive
     - gofmt
     - goimports
     - goprintffuncname
     - gosec
     #- lll
-    - maligned
+    # - fieldalignment # TODO: Disabled temporairly, enable it back when memory aligning fields
     - misspell
     - prealloc
-    - scopelint
+    - exportloopref
     - unconvert
     - unparam
 
@@ -170,7 +173,14 @@ issues:
     - linters:
         - gocyclo
         - funlen
+        - gocognit
       source: "^func validateType"
+      
+    - linters:
+        - gocyclo
+        - funlen
+        - gocognit
+      source: "^func validate"
 
     # We might have some unused boilerplate functions
     - linters:

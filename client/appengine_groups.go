@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Ispirata Srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,86 +16,172 @@ package client
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
-	"path"
+
+	"github.com/astarte-platform/astarte-go/misc"
+	"moul.io/http2curl"
 )
 
-// This file contains all API Calls related to device group management
-
-// ListGroups lists the groups in a Realm
-func (s *AppEngineService) ListGroups(realm string) ([]string, error) {
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
-	groupsList := []string{}
-	err := s.client.genericJSONDataAPIGET(&groupsList, callURL.String(), 200)
-
-	return groupsList, err
+// DevicesAndGroup maps to the JSON object returned by a Create Group call to AppEngine API.
+type DevicesAndGroup struct {
+	GroupName string   `json:"group_name"`
+	Devices   []string `json:"devices"`
 }
 
-// CreateGroup creates a group with the given deviceIdentifierList in the Realm
-func (s *AppEngineService) CreateGroup(realm string, groupName string, deviceIdentifierList []string,
-	deviceIdentifiersType DeviceIdentifierType) error {
+type deviceIDPayload struct {
+	Device string `json:"device_id"`
+}
 
-	deviceIDList := make([]string, len(deviceIdentifierList))
-	for i, deviceIdentifier := range deviceIdentifierList {
-		deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifiersType)
-		if err != nil {
-			return err
+type ListGroupsRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// ListGroups builds a request to list the groups in a Realm.
+func (c *Client) ListGroups(realm string) (AstarteRequest, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/groups", realm)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return ListGroupsRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r ListGroupsRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return ListGroupsResponse{res: res}, nil
+}
+
+func (r ListGroupsRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type CreateGroupRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// CreateGroup builds a request to create a group with the given deviceIDList in the Realm.
+// Only valid Astarte device IDs can be used when adding devices to a group.
+func (c *Client) CreateGroup(realm, groupName string, deviceIDList []string) (AstarteRequest, error) {
+	for _, deviceID := range deviceIDList {
+		if !misc.IsValidAstarteDeviceID(deviceID) {
+			return Empty{}, ErrInvalidDeviceID(deviceID)
 		}
-		deviceIDList[i] = deviceID
-	}
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups", realm))
-	payload := map[string]interface{}{"group_name": groupName, "devices": deviceIDList}
-	err := s.client.genericJSONDataAPIPost(callURL.String(), payload, 201)
-	if err != nil {
-		return err
 	}
 
-	return nil
+	callURL := makeURL(c.appEngineURL, "/v1/%s/groups", realm)
+	payload, _ := makeBody(DevicesAndGroup{GroupName: groupName, Devices: deviceIDList})
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+
+	return CreateGroupRequest{req: req, expects: 201}, nil
 }
 
-// ListGroupDevices lists the devices that belong to a group
-func (s *AppEngineService) ListGroupDevices(realm string, groupName string) ([]string, error) {
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
-	groupDevicesList := []string{}
-	err := s.client.genericJSONDataAPIGET(&groupDevicesList, callURL.String(), 200)
-
-	return groupDevicesList, err
+// nolint:bodyclose
+func (r CreateGroupRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return CreateGroupResponse{res: res}, nil
 }
 
-// AddDeviceToGroup adds a device to the group
-func (s *AppEngineService) AddDeviceToGroup(realm string, groupName string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType) error {
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName)))
-	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType)
-	if err != nil {
-		return err
-	}
-	payload := map[string]string{"device_id": deviceID}
-	err = s.client.genericJSONDataAPIPost(callURL.String(), payload, 201)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r CreateGroupRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
 
-// RemoveDeviceFromGroup removes a device from the group
-func (s *AppEngineService) RemoveDeviceFromGroup(realm string, groupName string, deviceIdentifier string,
-	deviceIdentifierType DeviceIdentifierType) error {
-	deviceID, err := s.GetDeviceIDFromDeviceIdentifier(realm, deviceIdentifier, deviceIdentifierType)
+// ListGroupDevices builds a paginator to request a list of the devices that belong to a group.
+func (c *Client) ListGroupDevices(realm, groupName string, pageSize int, format DeviceResultFormat) (Paginator, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName))
+	paginator, err := c.GetDeviceListPaginator(realm, pageSize, format)
 	if err != nil {
-		return err
-	}
-	callURL, _ := url.Parse(s.appEngineURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/groups/%s/devices/%s", realm, url.PathEscape(groupName), deviceID))
-	err = s.client.genericJSONDataAPIDelete(callURL.String(), 204)
-	if err != nil {
-		return err
+		return &DeviceListPaginator{}, err
 	}
 
-	return nil
+	deviceListPaginator := paginator.(*DeviceListPaginator)
+	deviceListPaginator.baseURL = callURL
+
+	return deviceListPaginator, nil
+}
+
+type AddDeviceToGroupRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// AddDeviceToGroup builds a request to add a device to a group.
+// Only valid Astarte device IDs can be used when adding a device to a group.
+func (c *Client) AddDeviceToGroup(realm, groupName, deviceID string) (AstarteRequest, error) {
+	if !misc.IsValidAstarteDeviceID(deviceID) {
+		return Empty{}, ErrInvalidDeviceID(deviceID)
+	}
+
+	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices", realm, url.PathEscape(groupName))
+	payload, _ := makeBody(deviceIDPayload{Device: deviceID})
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+
+	return AddDeviceToGroupRequest{req: req, expects: 201}, nil
+}
+
+// nolint:bodyclose
+func (r AddDeviceToGroupRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r AddDeviceToGroupRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type RemoveDeviceFromGroupRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// RemoveDeviceFromGroup builds a request to removes a device from the group.
+// Only valid Astarte device IDs can be used when removing a device from a group.
+func (c *Client) RemoveDeviceFromGroup(realm, groupName, deviceID string) (AstarteRequest, error) {
+	if !misc.IsValidAstarteDeviceID(deviceID) {
+		return Empty{}, ErrInvalidDeviceID(deviceID)
+	}
+
+	callURL := makeURL(c.appEngineURL, "/v1/%s/groups/%s/devices/%s", realm, url.PathEscape(groupName), deviceID)
+	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil)
+
+	return RemoveDeviceFromGroupRequest{req: req, expects: 204}, nil
+}
+
+// nolint:bodyclose
+func (r RemoveDeviceFromGroupRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return Empty{}, ErrDifferentStatusCode(r.expects, res.StatusCode)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r RemoveDeviceFromGroupRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }

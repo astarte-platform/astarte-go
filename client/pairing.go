@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Ispirata Srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,76 +16,146 @@ package client
 
 import (
 	"fmt"
-	"net/url"
-	"path"
+	"net/http"
+
+	"moul.io/http2curl"
 )
 
-// PairingService is the API Client for Pairing API
-type PairingService struct {
-	client     *Client
-	pairingURL *url.URL
+type registerDevicePayload struct {
+	HwID string `json:"hw_id"`
 }
 
-// RegisterDevice registers a new device into the Realm.
-// Returns the Credential Secret of the Device when successful.
+type getMQTTv1CertificatePayload struct {
+	CSR string `json:"csr"`
+}
+
+type RegisterDeviceRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// RegisterDevice builds a request to register a new device into the Realm.
 // TODO: add support for initial_introspection
-func (s *PairingService) RegisterDevice(realm string, deviceID string) (string, error) {
-	callURL, _ := url.Parse(s.pairingURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/agent/devices", realm))
+func (c *Client) RegisterDevice(realm string, deviceID string) (AstarteRequest, error) {
+	callURL := makeURL(c.pairingURL, "/v1/%s/agent/devices", realm)
+	payload, _ := makeBody(registerDevicePayload{HwID: deviceID})
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
 
-	var requestBody struct {
-		HwID string `json:"hw_id"`
-	}
-	requestBody.HwID = deviceID
-
-	ret := deviceRegistrationResponse{}
-	err := s.client.genericJSONDataAPIPostWithResponse(&ret, callURL.String(), requestBody, 201)
-
-	return ret.CredentialsSecret, err
+	return RegisterDeviceRequest{req: req, expects: 201}, nil
 }
 
-// UnregisterDevice resets the registration state of a device. This makes it possible to register it again.
-// All data belonging to the device will be left as is in Astarte.
-func (s *PairingService) UnregisterDevice(realm string, deviceID string) error {
-	callURL, _ := url.Parse(s.pairingURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/agent/devices/%s", realm, deviceID))
-
-	err := s.client.genericJSONDataAPIDelete(callURL.String(), 204)
+// nolint:bodyclose
+func (r RegisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return err
+		return Empty{}, err
 	}
-
-	return nil
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return RegisterDeviceResponse{res: res}, nil
 }
 
-// ObtainNewMQTTv1CertificateForDevice returns a valid SSL Certificate for Devices running on astarte_mqtt_v1.
-// This API is meant to be called by the device, and your Client needs to have the Device's Credentials Secret
-// as its token. Always call SetToken with the Credentials Secret before calling this function.
-func (s *PairingService) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, csr string) (string, error) {
-	callURL, _ := url.Parse(s.pairingURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s/protocols/astarte_mqtt_v1/credentials", realm, deviceID))
-
-	var requestBody struct {
-		CSR string `json:"csr"`
-	}
-	requestBody.CSR = csr
-
-	ret := getMQTTv1CertificateResponse{}
-	err := s.client.genericJSONDataAPIPostWithResponse(&ret, callURL.String(), requestBody, 201)
-
-	return ret.ClientCertificate, err
+func (r RegisterDeviceRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
 
-// GetMQTTv1ProtocolInformationForDevice returns protocol information (such as the broker URL) for devices running
-// on astarte_mqtt_v1.
-// This API is meant to be called by the device, and your Client needs to have the Device's Credentials Secret
-// as its token. Always call SetToken with the Credentials Secret before calling this function.
-func (s *PairingService) GetMQTTv1ProtocolInformationForDevice(realm, deviceID string) (AstarteMQTTv1ProtocolInformation, error) {
-	callURL, _ := url.Parse(s.pairingURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/devices/%s", realm, deviceID))
+type UnregisterDeviceRequest struct {
+	req     *http.Request
+	expects int
+}
 
-	ret := getDeviceProtocolStatusResponse{}
-	err := s.client.genericJSONDataAPIGET(&ret, callURL.String(), 200)
+// UnregisterDevice builds a request to reset the registration state of a device.
+// Once the request is run, this makes it possible to register it again.
+// All data belonging to the device will be left as is in Astarte.
+func (c *Client) UnregisterDevice(realm string, deviceID string) (AstarteRequest, error) {
+	callURL := makeURL(c.pairingURL, "/v1/%s/agent/devices/%s", realm, deviceID)
+	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil)
 
-	return ret.Protocols.AstarteMQTTv1, err
+	return UnregisterDeviceRequest{req: req, expects: 204}, nil
+}
+
+// nolint:bodyclose
+func (r UnregisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r UnregisterDeviceRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type NewDeviceCertificateRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// ObtainNewMQTTv1CertificateForDevice builds a request for retrieving a valid SSL Certificate for Devices
+// running on astarte_mqtt_v1.
+// This API is meant to be called by the device, and the Client that executes (Runs) the request needs to
+// have the Device's Credentials Secret as its token.
+func (c *Client) ObtainNewMQTTv1CertificateForDevice(realm, deviceID, csr string) (AstarteRequest, error) {
+	callURL := makeURL(c.pairingURL, "/v1/%s/devices/%s/protocols/astarte_mqtt_v1/credentials", realm, deviceID)
+	payload, _ := makeBody(getMQTTv1CertificatePayload{CSR: csr})
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+
+	return NewDeviceCertificateRequest{req: req, expects: 201}, nil
+}
+
+// nolint:bodyclose
+func (r NewDeviceCertificateRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NewDeviceCertificateResponse{res: res}, nil
+}
+
+func (r NewDeviceCertificateRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type Mqttv1DeviceInformationRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// GetMQTTv1ProtocolInformationForDevice builds a request for retrieving protocol information (such as
+// the broker URL) for devices running on astarte_mqtt_v1.
+// This API is meant to be called by the device, and the Client that executes (Runs) the request needs to
+// have the Device's Credentials Secret as its token.
+func (c *Client) GetMQTTv1ProtocolInformationForDevice(realm, deviceID string) (AstarteRequest, error) {
+	callURL := makeURL(c.pairingURL, "/v1/%s/devices/%s", realm, deviceID)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return Mqttv1DeviceInformationRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r Mqttv1DeviceInformationRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return Mqttv1DeviceInformationResponse{res: res}, nil
+}
+
+func (r Mqttv1DeviceInformationRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }

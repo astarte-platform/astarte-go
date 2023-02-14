@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Ispirata Srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,285 +15,402 @@
 package client
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
-	"path"
-	"reflect"
-	"time"
 
-	"github.com/astarte-platform/astarte-go/interfaces"
-	"github.com/iancoleman/orderedmap"
+	"moul.io/http2curl"
 )
 
-const defaultPageSize int = 10000
+// DeviceIdentifierType represents what kind of identifier is used for identifying a Device.
+type DeviceIdentifierType int
 
-var invalidTime time.Time = time.Unix(0, 0)
+const (
+	// AutodiscoverDeviceIdentifier is the default, and uses heuristics to autodetermine which kind of
+	// identifier is being used.
+	AutodiscoverDeviceIdentifier DeviceIdentifierType = iota
+	// AstarteDeviceID is the Device's ID in its standard format.
+	AstarteDeviceID
+	// AstarteDeviceAlias is one of the Device's Aliases.
+	AstarteDeviceAlias
+)
 
-// AppEngineService is the API Client for AppEngine API
-type AppEngineService struct {
-	client       *Client
-	appEngineURL *url.URL
-}
-
-// GetProperties returns all the currently set Properties on a given Interface
-func (s *AppEngineService) GetProperties(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
-	interfaceName string) (map[string]interface{}, error) {
-	data, err := s.nestedIndividualQuery(interfaceName, realm, deviceIdentifier, deviceIdentifierType, "")
-	if err != nil {
-		return nil, err
+// GetDeviceListPaginator returns a Paginator for all the Devices in the realm.
+// The paginator can return different result formats depending on the format
+// parameter.
+func (c *Client) GetDeviceListPaginator(realm string, pageSize int, format DeviceResultFormat) (Paginator, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/devices", realm)
+	query := url.Values{}
+	deviceListPaginator := DeviceListPaginator{
+		baseURL:     callURL,
+		nextQuery:   query,
+		format:      format,
+		pageSize:    pageSize,
+		client:      c,
+		hasNextPage: true,
 	}
 
-	return parsePropertyInterface(data), nil
+	return &deviceListPaginator, nil
 }
 
-// GetDatastreamSnapshot returns all the last values on all paths for a Datastream interface
-func (s *AppEngineService) GetDatastreamSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
-	interfaceName string) (map[string]DatastreamValue, error) {
-	data, err := s.nestedIndividualQuery(interfaceName, realm, deviceIdentifier, deviceIdentifierType, "")
-	if err != nil {
-		return nil, err
-	}
-
-	return parseDatastreamInterface(data)
+type GetDeviceDetailsRequest struct {
+	req     *http.Request
+	expects int
 }
 
-// GetLastDatastreams returns all the last values on a path for a Datastream interface.
-// If limit is <= 0, it returns all existing datastreams. Consider using a GetDatastreamsPaginator in that case.
-func (s *AppEngineService) GetLastDatastreams(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, limit int) ([]DatastreamValue, error) {
+// GetDevice builds a request to return the DeviceDetails of a single Device in the Realm.
+func (c *Client) GetDeviceDetails(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return s.getDatastreamInternal(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, invalidTime, invalidTime, limit, DescendingOrder)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return GetDeviceDetailsRequest{req: req, expects: 200}, nil
 }
 
-// GetDatastreamsPaginator returns a Paginator for all the values on a path for a Datastream interface.
-func (s *AppEngineService) GetDatastreamsPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder) (DatastreamPaginator, error) {
+// nolint:bodyclose
+func (r GetDeviceDetailsRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return GetDeviceDetailsResponse{res: res}, nil
+}
+
+func (r GetDeviceDetailsRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type GetDeviceIDFromAliasRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// GetDeviceIDFromAlias builds a request to return the Device ID of a device given one of its aliases.
+func (c *Client) GetDeviceIDFromAlias(realm string, deviceAlias string) (AstarteRequest, error) {
+	getDeviceRequest, err := c.GetDeviceDetails(realm, deviceAlias, AstarteDeviceAlias)
+	if err != nil {
+		return Empty{}, nil
+	}
+	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
+	return GetDeviceIDFromAliasRequest(getDeviceDetailsRequest), nil
+}
+
+// nolint:bodyclose
+func (r GetDeviceIDFromAliasRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return GetDeviceIDFromAliasResponse{res: res}, nil
+}
+
+func (r GetDeviceIDFromAliasRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	// TODO check
+	return fmt.Sprintf("%s | grep 'DeviceID'\n", command)
+}
+
+type ListDeviceInterfacesRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// ListDeviceInterfaces builds a request to retrieve the list of interfaces exposed by the Device's introspection.
+func (c *Client) ListDeviceInterfaces(realm string, deviceIdentifier string,
+	deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return s.getDatastreamPaginatorInternal(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, invalidTime, time.Now(), defaultPageSize, resultSetOrder)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return ListDeviceInterfacesRequest{req: req, expects: 200}, nil
 }
 
-// GetDatastreamsTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface.
-func (s *AppEngineService) GetDatastreamsTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder) (DatastreamPaginator, error) {
+// nolint:bodyclose
+func (r ListDeviceInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return ListDeviceInterfacesResponse{res: res}, nil
+}
+
+func (r ListDeviceInterfacesRequest) ToCurl(c *Client) string {
+	return ""
+}
+
+type GetDevicesStatsRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// GetDevicesStats builds a request to return the DevicesStats of a Realm.
+func (c *Client) GetDevicesStats(realm string) (AstarteRequest, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/stats/devices", realm)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return GetDevicesStatsRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r GetDevicesStatsRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return GetDeviceStatsResponse{res: res}, nil
+}
+
+func (r GetDevicesStatsRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type ListDeviceAliasesRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// ListDeviceAliases builds a request to list all aliases of a Device.
+func (c *Client) ListDeviceAliases(realm string, deviceIdentifier string,
+	deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
+	getDeviceRequest, err := c.GetDeviceDetails(realm, deviceIdentifier, deviceIdentifierType)
+	if err != nil {
+		return Empty{}, nil
+	}
+	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
+	return ListDeviceAliasesRequest(getDeviceDetailsRequest), nil
+}
+
+// nolint:bodyclose
+func (r ListDeviceAliasesRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return ListDeviceAliasesResponse{res: res}, nil
+}
+
+func (r ListDeviceAliasesRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	// TODO check
+	return fmt.Sprintf("%s | grep 'Aliases'\n", command)
+}
+
+type AddDeviceAliasRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// AddDeviceAlias builds a request to add an Alias to a Device
+func (c *Client) AddDeviceAlias(realm string, deviceID string, aliasTag string, deviceAlias string) (AstarteRequest, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/devices/%s", realm, deviceID)
+	aliasMap := map[string]map[string]string{"aliases": {aliasTag: deviceAlias}}
+	payload, _ := makeBody(aliasMap)
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+
+	return AddDeviceAliasRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r AddDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+
+	return NoDataResponse{res: res}, nil
+}
+
+func (r AddDeviceAliasRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type DeleteDeviceAliasRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// DeleteDeviceAlias builds a request to delete an Alias from a Device based on the Alias' tag.
+func (c *Client) DeleteDeviceAlias(realm string, deviceID string, aliasTag string) (AstarteRequest, error) {
+	callURL := makeURL(c.appEngineURL, "/v1/%s/devices/%s", realm, deviceID)
+	// We're using map[string]interface{} rather than map[string]string since we want to have null
+	// rather than an empty string in the JSON payload, and this is the only way.
+	aliasMap := map[string]map[string]interface{}{"aliases": {aliasTag: nil}}
+	payload, _ := makeBody(aliasMap)
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+
+	return DeleteDeviceAliasRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r DeleteDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r DeleteDeviceAliasRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	// TODO check
+	return fmt.Sprint(command)
+}
+
+type InhibitDeviceRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// SetDeviceInhibited builds a request to set the Credentials Inhibition state of a Device.
+func (c *Client) SetDeviceInhibited(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, inhibit bool) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return s.getDatastreamPaginatorInternal(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, since, to, defaultPageSize, resultSetOrder)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	credentialsMap := map[string]bool{"credentials_inhibited": inhibit}
+	payload, _ := makeBody(credentialsMap)
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+
+	return InhibitDeviceRequest{req: req, expects: 200}, nil
 }
 
-// GetAggregateParametricDatastreamSnapshot returns the last value for a Parametric Datastream aggregate interface
-func (s *AppEngineService) GetAggregateParametricDatastreamSnapshot(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName string) (map[string]DatastreamAggregateValue, error) {
-	// It's a snapshot, so limit=1
-	snapshot := orderedmap.OrderedMap{}
-	if err := s.appengineGenericJSONDataAPIGet(&snapshot, interfaceName, realm, deviceIdentifier, deviceIdentifierType, "limit=1"); err != nil {
-		return nil, err
-	}
-
-	// If there is no data, return an empty value
-	if len(snapshot.Keys()) == 0 {
-		return nil, nil
-	}
-
-	return parseAggregateDatastreamInterface(snapshot)
-}
-
-// GetAggregateDatastreamSnapshot returns the last value for a non-parametric, Datastream aggregate interface
-func (s *AppEngineService) GetAggregateDatastreamSnapshot(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName string) (DatastreamAggregateValue, error) {
-	// It's a snapshot, so limit=1
-	datastreams, err := s.aggregateDatastreamQuery(interfaceName, realm, deviceIdentifier, deviceIdentifierType, "limit=1")
+// nolint:bodyclose
+func (r InhibitDeviceRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return DatastreamAggregateValue{}, err
+		return Empty{}, err
 	}
-
-	// If there is no data, return an empty value
-	if len(datastreams) == 0 {
-		return DatastreamAggregateValue{}, nil
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
 	}
-
-	return datastreams[0], nil
+	// no response expected
+	return NoDataResponse{res: res}, nil
 }
 
-// GetLastAggregateDatastreams returns the last count values for a Datastream aggregate interface
-func (s *AppEngineService) GetLastAggregateDatastreams(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, count int) ([]DatastreamAggregateValue, error) {
-	return s.aggregateDatastreamQuery(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType, fmt.Sprintf("limit=%v", count))
+func (r InhibitDeviceRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	// TODO check
+	return fmt.Sprint(command)
 }
 
-// GetAggregateDatastreamsTimeWindow returns the last count values for a Datastream aggregate interface
-func (s *AppEngineService) GetAggregateDatastreamsTimeWindow(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time) ([]DatastreamAggregateValue, error) {
-	return s.aggregateDatastreamQuery(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType,
-		fmt.Sprintf("since=%s&to=%s", since.UTC().Format(time.RFC3339Nano), to.UTC().Format(time.RFC3339Nano)))
+type ListDeviceAttributesRequest struct {
+	req     *http.Request
+	expects int
 }
 
-//////////
-// Sending functions: these ones are meant to send data
-//////////
-
-// SendData sends data to the specified astarteInterface. It performs all validity checks on the Interface object before moving forward
-// with the operation, as such it is assumed that the operation will be always validated on the client side. If you have access to a native
-// Interface object, accessing this method rather than the lower level ones is advised.
-// payload must match a compatible type for the Interface path. In case of an aggregate interface, payload *must* be a
-// map[string]interface{}, and each payload will be individually checked
-func (s *AppEngineService) SendData(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
-	astarteInterface interfaces.AstarteInterface, interfacePath string, payload interface{}) error {
-	// Perform a set of checks depending on the interface structure
-	switch {
-	case astarteInterface.Ownership == interfaces.DeviceOwnership:
-		return errors.New("cannot send data to device-owned interfaces")
-	case astarteInterface.Type == interfaces.PropertiesType, astarteInterface.Aggregation == interfaces.IndividualAggregation:
-		// In this case, validate the individual message
-		if err := interfaces.ValidateIndividualMessage(astarteInterface, interfacePath, payload); err != nil {
-			return err
-		}
-	case astarteInterface.Aggregation == interfaces.ObjectAggregation:
-		aggregatePayload, ok := payload.(map[string]interface{})
-		if !ok {
-			return errors.New("payload must be a map[string]interface{}")
-		}
-		if err := interfaces.ValidateAggregateMessage(astarteInterface, interfacePath, aggregatePayload); err != nil {
-			return err
-		}
+// ListDeviceAttributes builds a request to list all Attributes of a Device.
+func (c *Client) ListDeviceAttributes(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) (AstarteRequest, error) {
+	getDeviceRequest, err := c.GetDeviceDetails(realm, deviceIdentifier, deviceIdentifierType)
+	if err != nil {
+		return Empty{}, nil
 	}
+	getDeviceDetailsRequest, _ := getDeviceRequest.(GetDeviceDetailsRequest)
+	return ListDeviceAttributesRequest(getDeviceDetailsRequest), nil
+}
 
-	// If we got here, it's time to do the right thing.
-	switch {
-	case astarteInterface.Type == interfaces.PropertiesType:
-		return s.SetProperty(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
-	case astarteInterface.Aggregation == interfaces.IndividualAggregation:
-		return s.SendDatastream(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
-	case astarteInterface.Aggregation == interfaces.ObjectAggregation:
-		return s.SendAggregateDatastream(realm, deviceIdentifier, deviceIdentifierType, astarteInterface.Name, interfacePath, payload)
+// nolint:bodyclose
+func (r ListDeviceAttributesRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
 	}
-
-	// We should never get here
-	return errors.New("internal error")
-}
-
-// SendDatastream sends a datastream to the given interface without additional checks.
-// payload must be of a type compatible with the interface's endpoint. Any errors will be returned on the server side or
-// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
-func (s *AppEngineService) SendDatastream(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
-	if reflect.TypeOf(payload).Kind() == reflect.Map {
-		return errors.New("payload must not be a map")
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
 	}
-	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "POST")
+	return ListDeviceAttributesResponse{res: res}, nil
 }
 
-// SendAggregateDatastream sends an aggregate datastream to the given interface without additional checks.
-// payload must be a map. Any errors will be returned on the server side or
-// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
-func (s *AppEngineService) SendAggregateDatastream(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
-	if reflect.TypeOf(payload).Kind() != reflect.Map {
-		return errors.New("payload must be a map")
-	}
-	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "POST")
+func (r ListDeviceAttributesRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
 
-// SetProperty sets a property on the given interface without additional checks. payload must be of a type
-// compatible with the interface's endpoint Any errors will be returned on the server side or
-// in payload marshaling. If you have a native AstarteInterface object, calling SendData is advised
-func (s *AppEngineService) SetProperty(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}) error {
-	return s.performSendRequest(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, payload, "PUT")
+type SetDeviceAttributeRequest struct {
+	req     *http.Request
+	expects int
 }
 
-//////////
-// Private APIs: These abstract the real calls and do custom decoding of the different reply types
-//////////
-
-func (s *AppEngineService) nestedIndividualQuery(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) (map[string]interface{}, error) {
-	ret := map[string]interface{}{}
-	err := s.appengineGenericJSONDataAPIGet(&ret, urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
-
-	return ret, err
-}
-
-func (s *AppEngineService) aggregateDatastreamQuery(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) ([]DatastreamAggregateValue, error) {
-	ret := []DatastreamAggregateValue{}
-	err := s.appengineGenericJSONDataAPIGet(&ret, urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
-
-	return ret, err
-}
-
-func (s *AppEngineService) appengineGenericJSONDataAPIURL(urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) (*url.URL, error) {
+// SetDeviceAttribute builds a request to set an Attribute key to a certain value for a Device
+func (c *Client) SetDeviceAttribute(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributeKey, attributeValue string) (AstarteRequest, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	callURL, err := url.Parse(s.appEngineURL.String())
-	if err != nil {
-		return nil, err
-	}
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/%s/%s/interfaces/%s", realm,
-		devicePath(deviceIdentifier, resolvedDeviceIdentifierType), urlPath))
-	if len(rawQuery) > 0 {
-		callURL.RawQuery = rawQuery
-	}
-	return callURL, nil
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	attributeMap := map[string]map[string]string{"attributes": {attributeKey: attributeValue}}
+	payload, _ := makeBody(attributeMap)
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
+
+	return SetDeviceAttributeRequest{req: req, expects: 200}, nil
 }
 
-func (s *AppEngineService) appengineGenericJSONDataAPIGet(ret interface{}, urlPath, realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, rawQuery string) error {
-	url, err := s.appengineGenericJSONDataAPIURL(urlPath, realm, deviceIdentifier, deviceIdentifierType, rawQuery)
+// nolint:bodyclose
+func (r SetDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
 	if err != nil {
-		return err
+		return Empty{}, err
 	}
-
-	return s.client.genericJSONDataAPIGET(ret, url.String(), 200)
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
 }
 
-func (s *AppEngineService) getDatastreamInternal(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string,
-	since, to time.Time, limit int, resultSetOrder ResultSetOrder) ([]DatastreamValue, error) {
-	realLimit := limit
-	if limit < 0 || limit > defaultPageSize {
-		realLimit = defaultPageSize
-	}
-	datastreamPaginator, err := s.getDatastreamPaginatorInternal(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath,
-		since, to, realLimit, resultSetOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	var resultSet []DatastreamValue
-	for ok := true; ok; ok = datastreamPaginator.HasNextPage() {
-		page, err := datastreamPaginator.GetNextPage()
-		if err != nil {
-			return nil, err
-		}
-
-		// Check special cases
-		if limit > 0 {
-			totalSize := len(resultSet) + len(page)
-			if totalSize == limit {
-				return append(resultSet, page...), nil
-			} else if totalSize > limit {
-				missingSamples := limit - len(resultSet)
-				return append(resultSet, page[0:missingSamples-1]...), nil
-			}
-		}
-
-		resultSet = append(resultSet, page...)
-	}
-
-	return resultSet, nil
+func (r SetDeviceAttributeRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
 
-func (s *AppEngineService) getDatastreamPaginatorInternal(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string,
-	since, to time.Time, pageSize int, resultSetOrder ResultSetOrder) (DatastreamPaginator, error) {
-	url, err := s.appengineGenericJSONDataAPIURL(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType, "")
-	if err != nil {
-		return DatastreamPaginator{}, err
-	}
-
-	datastreamPaginator := DatastreamPaginator{
-		baseURL:        url,
-		windowStart:    since,
-		windowEnd:      to,
-		nextWindow:     invalidTime,
-		pageSize:       pageSize,
-		client:         s.client,
-		hasNextPage:    true,
-		resultSetOrder: resultSetOrder,
-	}
-	return datastreamPaginator, nil
+type DeleteDeviceAttributeRequest struct {
+	req     *http.Request
+	expects int
 }
 
-func (s *AppEngineService) performSendRequest(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, payload interface{}, method string) error {
-	url, err := s.appengineGenericJSONDataAPIURL(interfaceName+interfacePath, realm, deviceIdentifier, deviceIdentifierType, "")
-	if err != nil {
-		return err
-	}
+// DeleteDeviceAttribute builds a request to delete an Attribute key and its value from a Device
+func (c *Client) DeleteDeviceAttribute(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, attributeKey string) (AstarteRequest, error) {
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType))
+	// We're using map[string]interface{} rather than map[string]string since we want to have null
+	// rather than an empty string in the JSON payload, and this is the only way.
+	attributeMap := map[string]map[string]interface{}{"attributes": {attributeKey: nil}}
+	payload, _ := makeBody(attributeMap)
+	req := c.makeHTTPrequestWithContentType(http.MethodPatch, callURL, payload, "application/merge-patch+json")
 
-	// Normalize payload encoding bytes, given we're using JSON
-	return s.client.genericJSONDataAPIWriteNoResponse(method, url.String(), interfaces.NormalizePayload(payload, true), 200)
+	return DeleteDeviceAttributeRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r DeleteDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r DeleteDeviceAttributeRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }

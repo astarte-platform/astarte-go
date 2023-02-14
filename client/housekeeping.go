@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Ispirata Srl
+// Copyright © 2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,77 +15,179 @@
 package client
 
 import (
-	"errors"
 	"fmt"
-	"net/url"
-	"path"
+	"net/http"
+
+	"moul.io/http2curl"
 )
 
-// HousekeepingService is the API Client for Housekeeping API
-type HousekeepingService struct {
-	client          *Client
-	housekeepingURL *url.URL
+type ListRealmsRequest struct {
+	req     *http.Request
+	expects int
 }
 
-// ListRealms returns all realms in the cluster.
-func (s *HousekeepingService) ListRealms() ([]string, error) {
-	callURL, _ := url.Parse(s.housekeepingURL.String())
-	callURL.Path = path.Join(callURL.Path, "/v1/realms")
-	realmsList := []string{}
-	err := s.client.genericJSONDataAPIGET(&realmsList, callURL.String(), 200)
+// ListRealms builds a request to list all realms in the cluster.
+func (c *Client) ListRealms() (AstarteRequest, error) {
+	callURL := makeURL(c.housekeepingURL, "/v1/realms")
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
-	return realmsList, err
+	return ListRealmsRequest{req: req, expects: 200}, nil
 }
 
-// GetRealm returns data about a single Realm.
-func (s *HousekeepingService) GetRealm(realm string) (RealmDetails, error) {
-	callURL, _ := url.Parse(s.housekeepingURL.String())
-	callURL.Path = path.Join(callURL.Path, fmt.Sprintf("/v1/realms/%s", realm))
-	realmDetails := RealmDetails{}
-	err := s.client.genericJSONDataAPIGET(&realmDetails, callURL.String(), 200)
-
-	return realmDetails, err
-}
-
-// CreateRealm creates a new Realm in the Cluster with default parameters.
-func (s *HousekeepingService) CreateRealm(realm string, publicKeyString string) error {
-	return s.createRealmInternal(realm, publicKeyString, 0, nil)
-}
-
-// CreateRealmWithReplicationFactor creates a new Realm in the Cluster with a custom Replication Factor.
-// The replication factor must always be > 0.
-func (s *HousekeepingService) CreateRealmWithReplicationFactor(realm string, publicKeyString string,
-	replicationFactor int) error {
-	if replicationFactor <= 0 {
-		return errors.New("Replication factor should be > 0")
+// nolint:bodyclose
+func (r ListRealmsRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
 	}
-	return s.createRealmInternal(realm, publicKeyString, replicationFactor, nil)
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return ListRealmsResponse{res: res}, nil
 }
 
-// CreateRealmWithDatacenterReplication creates a new Realm in the Cluster with a custom,
-// per-datacenter Replication Factor. Both replicationClass and datacenterReplicationFactors must be provided.
-func (s *HousekeepingService) CreateRealmWithDatacenterReplication(realm string, publicKeyString string,
-	datacenterReplicationFactors map[string]int) error {
-	return s.createRealmInternal(realm, publicKeyString, 0, datacenterReplicationFactors)
+func (r ListRealmsRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
 
-func (s *HousekeepingService) createRealmInternal(realm string, publicKeyString string, replicationFactor int,
-	datacenterReplicationFactors map[string]int) error {
-	callURL, _ := url.Parse(s.housekeepingURL.String())
-	callURL.Path = path.Join(callURL.Path, "/v1/realms")
+type GetRealmRequest struct {
+	req     *http.Request
+	expects int
+}
 
-	requestBody := map[string]interface{}{
-		"realm_name":         realm,
-		"jwt_public_key_pem": publicKeyString,
+// GetRealm builds a request to get data about a single Realm.
+func (c *Client) GetRealm(realm string) (AstarteRequest, error) {
+	callURL := makeURL(c.housekeepingURL, "/v1/realms/%s", realm)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return GetRealmRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r GetRealmRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return GetRealmResponse{res: res}, nil
+}
+
+func (r GetRealmRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type CreateRealmRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// nolint:govet
+type newRealmRequestBuilder struct {
+	realmName                    string         `json:"realm_name"`
+	publicKey                    string         `json:jwt_public_key_pem`
+	replicationFactor            int            `json:replication_factor,omitempty`
+	datacenterReplicationFactors map[string]int `json:datacenter_replication_factors,omitempty`
+	replicationClass             string         `json:replication_class,omitempty`
+}
+
+type realmOption func(*newRealmRequestBuilder)
+
+// CreateRealm builds a request to create a new Realm in the Cluster with default parameters.
+// When running in production, it is advised to use a NetworkTopologyStrategy, or at least a
+// replication factor > 1.
+// You can create a realm with:
+// c.NewRealm(client.WithRealmName("test"), client.WithRealmPublicKey("YOUR_REALM_PUBLIC_KEY"), client.WithReplicationFactor(3))
+func (c *Client) CreateRealm(opts ...realmOption) (AstarteRequest, error) {
+	newRealm := newRealmRequestBuilder{}
+	for _, f := range opts {
+		f(&newRealm)
 	}
 
-	if replicationFactor > 0 {
-		requestBody["replication_class"] = SimpleStrategy.String()
-		requestBody["replication_factor"] = replicationFactor
-	} else if datacenterReplicationFactors != nil {
-		requestBody["replication_class"] = NetworkTopologyStrategy.String()
-		requestBody["datacenter_replication_factors"] = datacenterReplicationFactors
+	if err := newRealm.validate(); err != nil {
+		return Empty{}, err
 	}
 
-	return s.client.genericJSONDataAPIPost(callURL.String(), requestBody, 201)
+	// TODO check if setting default replicationFactor is needed
+
+	callURL := makeURL(c.housekeepingURL, "/v1/realms")
+	reqBody, _ := makeBody(newRealm)
+	req := c.makeHTTPrequest(http.MethodPost, callURL, reqBody)
+
+	return CreateRealmRequest{req: req, expects: 201}, nil
+}
+
+func (r *newRealmRequestBuilder) validate() error {
+	if r.realmName == "" {
+		return ErrRealmNameNotProvided
+	}
+	if r.publicKey == "" {
+		return ErrRealmPublicKeyNotProvided
+	}
+	if r.replicationFactor != 0 && r.datacenterReplicationFactors != nil {
+		return ErrTooManyReplicationFactors
+	}
+	if r.datacenterReplicationFactors == nil && r.replicationFactor < 0 {
+		return ErrNegativeReplicationFactor
+	}
+	return nil
+}
+
+// Sets the name for a new Realm.
+// nolint:golint,revive
+func WithRealmName(name string) realmOption {
+	return func(req *newRealmRequestBuilder) {
+		req.realmName = name
+	}
+}
+
+// Sets the public key for a new Realm.
+// nolint:golint,revive
+func WithRealmPublicKey(publicKey string) realmOption {
+	return func(req *newRealmRequestBuilder) {
+		req.publicKey = publicKey
+	}
+}
+
+// Sets the Replication factor for a new Realm in a single datacenter.
+// Production-ready deployments usually are replicated on more datacenters,
+// but if you need to use just one, set a value at least higher than 1.
+// nolint:golint,revive
+func WithReplicationFactor(replicationFactor int) realmOption {
+	return func(req *newRealmRequestBuilder) {
+		req.replicationFactor = replicationFactor
+		//nolint:gosimple
+		req.replicationClass = fmt.Sprintf("\"SimpleStrategy\"")
+	}
+}
+
+// Sets the per-datacenter Replication Factor for a new realm. This is the way to go for production deployments.
+// nolint:golint,revive
+func WithDatacenterReplicationFactors(datacenterReplicationFactors map[string]int) realmOption {
+	return func(req *newRealmRequestBuilder) {
+		req.datacenterReplicationFactors = datacenterReplicationFactors
+		//nolint:gosimple
+		req.replicationClass = fmt.Sprintf("\"NetworkTopologyStrategy\"")
+	}
+}
+
+// nolint:bodyclose
+func (r CreateRealmRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return CreateRealmResponse{res: res}, nil
+}
+
+func (r CreateRealmRequest) ToCurl(c *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
 }
