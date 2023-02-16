@@ -30,7 +30,7 @@ type GetDatastreamSnapshotRequest struct {
 	aggregation interfaces.AstarteInterfaceAggregation
 }
 
-// GetDatastreamSnapshot builds a request to return all the last values on all paths for a Datastream individual aggregate interface.
+// GetDatastreamIndividualSnapshot builds a request to return all the last values on all paths for a Datastream individual aggregate interface.
 func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
 	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
@@ -39,7 +39,7 @@ func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier 
 	return GetDatastreamSnapshotRequest{req: req, expects: 200, aggregation: interfaces.IndividualAggregation}, nil
 }
 
-// GetDatastreamObjectSnapshot  builds a request to return the last value for a Datastream object aggregate interface
+// GetDatastreamObjectSnapshot builds a request to return the last value for a Datastream object aggregate interface
 func (c *Client) GetDatastreamObjectSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
 	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
@@ -70,26 +70,26 @@ func (r GetDatastreamSnapshotRequest) ToCurl(c *Client) string {
 	return fmt.Sprint(command)
 }
 
-// GetIndividualDatastreamsPaginator returns a Paginator for all the values on a path for a Datastream interface with individual aggregation.
-func (c *Client) GetIndividualDatastreamsPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
+// GetDatastreamIndividualPaginator returns a Paginator for all the values on a path for a Datastream interface with individual aggregation.
+func (c *Client) GetDatastreamIndividualPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
-// GetIndividualDatastreamsTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with individual aggregation.
-func (c *Client) GetIndividualDatastreamsTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
+// GetDatastreamIndividualTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with individual aggregation.
+func (c *Client) GetDatastreamIndividualTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, since, to, pageSize, resultSetOrder)
 }
 
-// GetObjectDatastreamsPaginator returns a Paginator for all the values on a path for a Datastream interface with object aggregation.
-func (c *Client) GetObjectDatastreamsPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
+// GetDatastreamObjectPaginator returns a Paginator for all the values on a path for a Datastream interface with object aggregation.
+func (c *Client) GetDatastreamObjectPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
-// GetObjectDatastreamsTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with object aggregation.
-func (c *Client) GetObjectDatastreamsTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
+// GetDatastreamObjectTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with object aggregation.
+func (c *Client) GetDatastreamObjectTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
 	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
 	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, since, to, pageSize, resultSetOrder)
 }
