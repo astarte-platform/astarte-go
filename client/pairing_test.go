@@ -66,11 +66,12 @@ func TestGetMQTTv1ProtocolInformationForDevice(t *testing.T) {
 	c, _ := getTestContext(t)
 	getInfoCall, _ := c.GetMQTTv1ProtocolInformationForDevice(testRealmName, testDeviceID)
 	getInfoResponse, _ := getInfoCall.Run(c)
-	data, err := getInfoResponse.Parse()
+	rawData, err := getInfoResponse.Parse()
 	if err != nil {
 		t.Error(err)
 	}
-	if data != testBrokerUrl {
+	data, _ := rawData.(AstarteMQTTv1ProtocolInformation)
+	if data.BrokerURL != testBrokerUrl {
 		t.Errorf("Failed broker url: %s\n", data)
 	}
 }
