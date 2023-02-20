@@ -15,11 +15,16 @@
 package client
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
 	"github.com/tidwall/gjson"
 )
+
+type AstarteMQTTv1ProtocolInformation struct {
+	BrokerURL string `json:"broker_url"`
+}
 
 // Parses data obtained by performing a request to register a device.
 // Returns the new credentials secret as a string.
@@ -47,11 +52,13 @@ func (r NewDeviceCertificateResponse) Raw() *http.Response {
 
 // Parses data obtained by performing a request for connection information
 // for a newly registered device.
-// Returns the Astarte broker URL as a string.
+// Returns the information as an AstarteMQTTv1ProtocolInformation struct.
 func (r Mqttv1DeviceInformationResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
 	b, _ := io.ReadAll(r.res.Body)
-	value := gjson.GetBytes(b, "data.broker_url").String()
+	data := gjson.GetBytes(b, "data").Raw
+	value := AstarteMQTTv1ProtocolInformation{}
+	_ = json.Unmarshal([]byte(data), &value)
 	return value, nil
 }
 func (r Mqttv1DeviceInformationResponse) Raw() *http.Response {
