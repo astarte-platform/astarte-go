@@ -16,7 +16,7 @@ package client
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/tidwall/gjson"
@@ -26,7 +26,7 @@ import (
 // Returns the list of realms as an array of strings.
 func (r ListRealmsResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
-	b, _ := ioutil.ReadAll(r.res.Body)
+	b, _ := io.ReadAll(r.res.Body)
 	body := string(b)
 	ret := []string{}
 	for _, v := range gjson.Get(body, "data").Array() {
@@ -51,7 +51,7 @@ type RealmDetails struct {
 // Returns the details as a RealmDetails struct.
 func (r GetRealmResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
-	b, _ := ioutil.ReadAll(r.res.Body)
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := RealmDetails{}
 	// TODO check err
@@ -67,7 +67,7 @@ func (r GetRealmResponse) Raw() *http.Response {
 // Returns the realm's details as a RealmDetails struct.
 func (r CreateRealmResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
-	b, _ := ioutil.ReadAll(r.res.Body)
+	b, _ := io.ReadAll(r.res.Body)
 	v := []byte(gjson.GetBytes(b, "data").Raw)
 	ret := RealmDetails{}
 	// TODO check err
