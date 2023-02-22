@@ -34,8 +34,9 @@ func (r ListInterfacesResponse) Parse() (any, error) {
 	}
 	return ret, nil
 }
-func (r ListInterfacesResponse) Raw() *http.Response {
-	return r.res
+func (r ListInterfacesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to list an interface's major versions.
@@ -49,8 +50,9 @@ func (r ListInterfaceMajorVersionsResponse) Parse() (any, error) {
 	}
 	return ret, nil
 }
-func (r ListInterfaceMajorVersionsResponse) Raw() *http.Response {
-	return r.res
+func (r ListInterfaceMajorVersionsResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to retrieve an interface.
@@ -65,8 +67,9 @@ func (r GetInterfaceResponse) Parse() (any, error) {
 	return interfaces.EnsureInterfaceDefaults(ret), nil
 
 }
-func (r GetInterfaceResponse) Raw() *http.Response {
-	return r.res
+func (r GetInterfaceResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to install an interface.
@@ -81,8 +84,9 @@ func (r InstallInterfaceResponse) Parse() (any, error) {
 	return interfaces.EnsureInterfaceDefaults(ret), nil
 }
 
-func (r InstallInterfaceResponse) Raw() *http.Response {
-	return r.res
+func (r InstallInterfaceResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to list triggers in a realm.
@@ -96,8 +100,9 @@ func (r ListTriggersResponse) Parse() (any, error) {
 	}
 	return ret, nil
 }
-func (r ListTriggersResponse) Raw() *http.Response {
-	return r.res
+func (r ListTriggersResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to retrieve a trigger.
@@ -114,8 +119,9 @@ func (r GetTriggerResponse) Parse() (any, error) {
 	return ret, nil
 }
 
-func (r GetTriggerResponse) Raw() *http.Response {
-	return r.res
+func (r GetTriggerResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to install a trigger.
@@ -132,6 +138,7 @@ func (r InstallTriggerResponse) Parse() (any, error) {
 	return ret, nil
 }
 
-func (r InstallTriggerResponse) Raw() *http.Response {
-	return r.res
+func (r InstallTriggerResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }

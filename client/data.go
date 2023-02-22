@@ -24,13 +24,13 @@ type AstarteResponse interface {
 	// Parse reads the AstarteResponse returned by Run and returns either a well-typed
 	// response payload or an error.
 	Parse() (any, error)
-	// Raw returns the bare http response returned by Run. Note that since this function
-	// does not close the response body, it is up to you to do so.
-	Raw() *http.Response
+	// Raw allows to supply a custom http Response handling function for the Astarte
+	// response. The function does not need to close the response body.
+	Raw(func(*http.Response) any) any
 }
 
-func (e Empty) Parse() (any, error) { return nil, nil }
-func (e Empty) Raw() *http.Response { return nil }
+func (e Empty) Parse() (any, error)              { return nil, nil }
+func (e Empty) Raw(func(*http.Response) any) any { return nil }
 
 // Pairing
 
@@ -160,6 +160,7 @@ func (r NoDataResponse) Parse() (any, error) {
 	return "", nil
 }
 
-func (r NoDataResponse) Raw() *http.Response {
-	return r.res
+func (r NoDataResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
