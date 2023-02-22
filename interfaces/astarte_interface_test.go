@@ -49,7 +49,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	i, err := ParseInterfaceFromString(validInterface)
+	i, err := ParseInterfaceFrom([]byte(validInterface))
 	if err != nil {
 		t.Error(err)
 	}
@@ -91,7 +91,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceName)
+	_, err = ParseInterfaceFrom(missingInterfaceName)
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing interface_name")
 	}
@@ -125,7 +125,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(emptyInterfaceName)
+	_, err = ParseInterfaceFrom([]byte(emptyInterfaceName))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing interface_name")
 	}
@@ -158,7 +158,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceMajor)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceMajor))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing interface_major")
 	}
@@ -191,7 +191,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceMinor)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceMinor))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing interface_minor")
 	}
@@ -224,7 +224,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceType)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceType))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing type")
 	}
@@ -257,7 +257,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceOwnership)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceOwnership))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing ownership")
 	}
@@ -273,7 +273,7 @@ func TestParsing(t *testing.T) {
 		"doc": "This interface allows to describe available sensors and their attributes such as name and sampled data measurement unit. Sensors are identified by their sensor_id. See also org.astarte-platform.genericsensors.AvailableSensors."
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceMappings)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceMappings))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing interface mappings")
 	}
@@ -290,7 +290,7 @@ func TestParsing(t *testing.T) {
                 "mappings": []
 	}`
 
-	_, err = ParseInterfaceFromString(emptyInterfaceMappings)
+	_, err = ParseInterfaceFrom([]byte(emptyInterfaceMappings))
 	if err == nil {
 		t.Error("This interface should have failed validation! Empty interface mappings")
 	}
@@ -323,7 +323,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceMappingEndpoint)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceMappingEndpoint))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing endpoint in interface mapping")
 	}
@@ -357,7 +357,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(emptyInterfaceMappingEndpoint)
+	_, err = ParseInterfaceFrom([]byte(emptyInterfaceMappingEndpoint))
 	if err == nil {
 		t.Error("This interface should have failed validation! Empty endpoint in interface mapping")
 	}
@@ -391,7 +391,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(wrongInterfaceMappingType)
+	_, err = ParseInterfaceFrom([]byte(wrongInterfaceMappingType))
 	if err == nil {
 		t.Error("This interface should have failed validation! Wrong type in interface mapping")
 	}
@@ -424,7 +424,7 @@ func TestParsing(t *testing.T) {
 		]
 	}`
 
-	_, err = ParseInterfaceFromString(missingInterfaceMappingType)
+	_, err = ParseInterfaceFrom([]byte(missingInterfaceMappingType))
 	if err == nil {
 		t.Error("This interface should have failed validation! Missing type in interface mapping")
 	}
@@ -490,7 +490,7 @@ func TestFailedTypeParsing(t *testing.T) {
 		]
 	}`
 
-	if _, err := ParseInterfaceFromString(validInterface); err == nil {
+	if _, err := ParseInterfaceFrom([]byte(validInterface)); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -519,7 +519,7 @@ func TestFailedStructureParsing(t *testing.T) {
 		]
 	}`
 
-	if _, err := ParseInterfaceFromString(validInterface); err == nil {
+	if _, err := ParseInterfaceFrom([]byte(validInterface)); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -548,7 +548,7 @@ func TestFailedMarshalingParsing(t *testing.T) {
 		]
 	}`
 
-	if _, err := ParseInterfaceFromString(validInterface); err == nil {
+	if _, err := ParseInterfaceFrom([]byte(validInterface)); err == nil {
 		t.Error("This interface should have failed validation!")
 	}
 }
@@ -579,7 +579,7 @@ func TestFailedOwnershipParsing(t *testing.T) {
 		]
 	}`
 
-	if _, err := ParseInterfaceFromString(validInterface); err == nil {
+	if _, err := ParseInterfaceFrom([]byte(validInterface)); err == nil {
 		t.Error(err)
 	}
 }

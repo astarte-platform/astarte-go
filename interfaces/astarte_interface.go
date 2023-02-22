@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -377,18 +377,26 @@ func (r *requiredAstarteInterface) ensureRequiredFields(b []byte) error {
 	return nil
 }
 
-// ParseInterfaceFromFile is a convenience function to call ParseInterface with a file as input
-func ParseInterfaceFromFile(interfaceFile string) (AstarteInterface, error) {
-	b, err := ioutil.ReadFile(interfaceFile)
-	if err != nil {
-		return AstarteInterface{}, err
-	}
-	return ParseInterface(b)
+// InterfaceProvider is the object that holds an interface.
+type interfaceProvider interface {
+	[]byte | string
 }
 
-// ParseInterfaceFromString is a convenience function to call ParseInterface with a string as input
-func ParseInterfaceFromString(interfaceContent string) (AstarteInterface, error) {
-	return ParseInterface([]byte(interfaceContent))
+// ParseInterfaceFrom is a convenience function to call ParseInterface with an input.
+// The input can be either a string, that is interpreted as a file path, or a byteslice.
+func ParseInterfaceFrom[T interfaceProvider](provider T) (AstarteInterface, error) {
+	switch p := any(provider).(type) {
+	case string:
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return AstarteInterface{}, err
+		}
+		return ParseInterface(b)
+	case []byte:
+		return ParseInterface(p)
+	default:
+		return AstarteInterface{}, errors.New("Provided value cannot be used as an Astarte interface")
+	}
 }
 
 // ParseInterface parses an interface from a JSON string and returns an AstarteInterface object when successful.
