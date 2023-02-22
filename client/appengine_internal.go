@@ -17,7 +17,7 @@ package client
 import (
 	"fmt"
 
-	"github.com/astarte-platform/astarte-go/misc"
+	"github.com/astarte-platform/astarte-go/deviceid"
 )
 
 // resolveDeviceIdentifierType maps a deviceIdentifier and DeviceIdentifierType to a resolved
@@ -27,7 +27,7 @@ import (
 func resolveDeviceIdentifierType(deviceIdentifier string, deviceIdentifierType DeviceIdentifierType) DeviceIdentifierType {
 	switch deviceIdentifierType {
 	case AutodiscoverDeviceIdentifier:
-		if misc.IsValidAstarteDeviceID(deviceIdentifier) {
+		if deviceid.IsValid(deviceIdentifier) {
 			return AstarteDeviceID
 		}
 		return AstarteDeviceAlias
