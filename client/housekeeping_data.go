@@ -34,8 +34,9 @@ func (r ListRealmsResponse) Parse() (any, error) {
 	}
 	return ret, nil
 }
-func (r ListRealmsResponse) Raw() *http.Response {
-	return r.res
+func (r ListRealmsResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // RealmDetails represents details of a single Realm.
@@ -59,8 +60,9 @@ func (r GetRealmResponse) Parse() (any, error) {
 	return ret, nil
 
 }
-func (r GetRealmResponse) Raw() *http.Response {
-	return r.res
+func (r GetRealmResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to create a realm.
@@ -74,6 +76,7 @@ func (r CreateRealmResponse) Parse() (any, error) {
 	_ = json.Unmarshal(v, &ret)
 	return ret, nil
 }
-func (r CreateRealmResponse) Raw() *http.Response {
-	return r.res
+func (r CreateRealmResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }

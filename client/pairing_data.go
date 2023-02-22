@@ -34,8 +34,9 @@ func (r RegisterDeviceResponse) Parse() (any, error) {
 	value := gjson.GetBytes(b, "data.credentials_secret").String()
 	return value, nil
 }
-func (r RegisterDeviceResponse) Raw() *http.Response {
-	return r.res
+func (r RegisterDeviceResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request to for a new device certificate.
@@ -46,8 +47,9 @@ func (r NewDeviceCertificateResponse) Parse() (any, error) {
 	value := gjson.GetBytes(b, "data.client_crt").String()
 	return value, nil
 }
-func (r NewDeviceCertificateResponse) Raw() *http.Response {
-	return r.res
+func (r NewDeviceCertificateResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request for connection information
@@ -61,6 +63,7 @@ func (r Mqttv1DeviceInformationResponse) Parse() (any, error) {
 	_ = json.Unmarshal([]byte(data), &value)
 	return value, nil
 }
-func (r Mqttv1DeviceInformationResponse) Raw() *http.Response {
-	return r.res
+func (r Mqttv1DeviceInformationResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }

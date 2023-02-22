@@ -108,8 +108,9 @@ func (r GetNextDeviceListPageResponse) Parse() (any, error) {
 	return data, nil
 }
 
-func (r GetNextDeviceListPageResponse) Raw() *http.Response {
-	return r.res
+func (r GetNextDeviceListPageResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 func (d *DeviceListPaginator) parseData(rawData []byte) any {
@@ -158,8 +159,9 @@ func (r GetDeviceIDFromAliasResponse) Parse() (any, error) {
 	return details.DeviceID, nil
 }
 
-func (r GetDeviceIDFromAliasResponse) Raw() *http.Response {
-	return r.res
+func (r GetDeviceIDFromAliasResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request device details.
@@ -173,8 +175,9 @@ func (r GetDeviceDetailsResponse) Parse() (any, error) {
 	return details, nil
 }
 
-func (r GetDeviceDetailsResponse) Raw() *http.Response {
-	return r.res
+func (r GetDeviceDetailsResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request a device introspection.
@@ -190,8 +193,9 @@ func (r ListDeviceInterfacesResponse) Parse() (any, error) {
 	return interfaces, nil
 }
 
-func (r ListDeviceInterfacesResponse) Raw() *http.Response {
-	return r.res
+func (r ListDeviceInterfacesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request device's aliases.
@@ -207,8 +211,9 @@ func (r ListDeviceAliasesResponse) Parse() (any, error) {
 	return aliases, nil
 }
 
-func (r ListDeviceAliasesResponse) Raw() *http.Response {
-	return r.res
+func (r ListDeviceAliasesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request device's attributes.
@@ -224,8 +229,9 @@ func (r ListDeviceAttributesResponse) Parse() (any, error) {
 	return attributes, nil
 }
 
-func (r ListDeviceAttributesResponse) Raw() *http.Response {
-	return r.res
+func (r ListDeviceAttributesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request for devices stats.
@@ -239,8 +245,9 @@ func (r GetDeviceStatsResponse) Parse() (any, error) {
 	return stats, nil
 }
 
-func (r GetDeviceStatsResponse) Raw() *http.Response {
-	return r.res
+func (r GetDeviceStatsResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // DatastreamIndividualValue represent one single Datastream value on an interface with Individual aggregation.
@@ -303,8 +310,9 @@ func (r GetNextDatastreamPageResponse) Parse() (any, error) {
 	return data, nil
 }
 
-func (r GetNextDatastreamPageResponse) Raw() *http.Response {
-	return r.res
+func (r GetNextDatastreamPageResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 func (d *DatastreamPaginator) parseData(rawData []byte) any {
@@ -431,8 +439,9 @@ func parseObjectDatastreamSnapshot(jsonValue []byte, prefix string, acc map[stri
 	// No third option, maybe we should return an error here
 }
 
-func (r GetDatastreamSnapshotResponse) Raw() *http.Response {
-	return r.res
+func (r GetDatastreamSnapshotResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request for a property value.
@@ -447,8 +456,9 @@ func (r GetPropertiesResponse) Parse() (any, error) {
 	return retMap, nil
 }
 
-func (r GetPropertiesResponse) Raw() *http.Response {
-	return r.res
+func (r GetPropertiesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 func parseProperties(jsonValue []byte, prefix string, acc map[string]PropertyValue) {
@@ -479,8 +489,9 @@ func (r ListGroupsResponse) Parse() (any, error) {
 	return groups, nil
 }
 
-func (r ListGroupsResponse) Raw() *http.Response {
-	return r.res
+func (r ListGroupsResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
 
 // Parses data obtained by performing a request create a new group.
@@ -494,6 +505,7 @@ func (r CreateGroupResponse) Parse() (any, error) {
 	return devicesAndGroup, nil
 }
 
-func (r CreateGroupResponse) Raw() *http.Response {
-	return r.res
+func (r CreateGroupResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
 }
