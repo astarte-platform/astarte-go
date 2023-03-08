@@ -86,13 +86,12 @@ type CreateRealmRequest struct {
 	expects int
 }
 
-// nolint:govet
 type newRealmRequestBuilder struct {
-	realmName                    string         `json:"realm_name"`
-	publicKey                    string         `json:jwt_public_key_pem`
-	replicationFactor            int            `json:replication_factor,omitempty`
-	datacenterReplicationFactors map[string]int `json:datacenter_replication_factors,omitempty`
-	replicationClass             string         `json:replication_class,omitempty`
+	RealmName                    string         `json:"realm_name"`
+	PublicKey                    string         `json:"jwt_public_key_pem"`
+	ReplicationFactor            int            `json:"replication_factor,omitempty"`
+	DatacenterReplicationFactors map[string]int `json:"datacenter_replication_factors,omitempty"`
+	ReplicationClass             string         `json:"replication_class,omitempty"`
 }
 
 type realmOption func(*newRealmRequestBuilder)
@@ -122,16 +121,16 @@ func (c *Client) CreateRealm(opts ...realmOption) (AstarteRequest, error) {
 }
 
 func (r *newRealmRequestBuilder) validate() error {
-	if r.realmName == "" {
+	if r.RealmName == "" {
 		return ErrRealmNameNotProvided
 	}
-	if r.publicKey == "" {
+	if r.PublicKey == "" {
 		return ErrRealmPublicKeyNotProvided
 	}
-	if r.replicationFactor != 0 && r.datacenterReplicationFactors != nil {
+	if r.ReplicationFactor != 0 && r.DatacenterReplicationFactors != nil {
 		return ErrTooManyReplicationFactors
 	}
-	if r.datacenterReplicationFactors == nil && r.replicationFactor < 0 {
+	if r.DatacenterReplicationFactors == nil && r.ReplicationFactor < 0 {
 		return ErrNegativeReplicationFactor
 	}
 	return nil
@@ -141,7 +140,7 @@ func (r *newRealmRequestBuilder) validate() error {
 // nolint:golint,revive
 func WithRealmName(name string) realmOption {
 	return func(req *newRealmRequestBuilder) {
-		req.realmName = name
+		req.RealmName = name
 	}
 }
 
@@ -149,7 +148,7 @@ func WithRealmName(name string) realmOption {
 // nolint:golint,revive
 func WithRealmPublicKey(publicKey string) realmOption {
 	return func(req *newRealmRequestBuilder) {
-		req.publicKey = publicKey
+		req.PublicKey = publicKey
 	}
 }
 
@@ -159,9 +158,9 @@ func WithRealmPublicKey(publicKey string) realmOption {
 // nolint:golint,revive
 func WithReplicationFactor(replicationFactor int) realmOption {
 	return func(req *newRealmRequestBuilder) {
-		req.replicationFactor = replicationFactor
+		req.ReplicationFactor = replicationFactor
 		//nolint:gosimple
-		req.replicationClass = fmt.Sprintf("\"SimpleStrategy\"")
+		req.ReplicationClass = fmt.Sprintf("\"SimpleStrategy\"")
 	}
 }
 
@@ -169,9 +168,9 @@ func WithReplicationFactor(replicationFactor int) realmOption {
 // nolint:golint,revive
 func WithDatacenterReplicationFactors(datacenterReplicationFactors map[string]int) realmOption {
 	return func(req *newRealmRequestBuilder) {
-		req.datacenterReplicationFactors = datacenterReplicationFactors
+		req.DatacenterReplicationFactors = datacenterReplicationFactors
 		//nolint:gosimple
-		req.replicationClass = fmt.Sprintf("\"NetworkTopologyStrategy\"")
+		req.ReplicationClass = fmt.Sprintf("\"NetworkTopologyStrategy\"")
 	}
 }
 
