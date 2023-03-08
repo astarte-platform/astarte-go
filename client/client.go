@@ -205,6 +205,26 @@ func WithExpiry(expirySeconds int) Option {
 	}
 }
 
+func (c *Client) GetPairingURL() (ret *url.URL) {
+	ret, _ = url.Parse(c.pairingURL.String())
+	return
+}
+
+func (c *Client) GetHousekeepingURL() (ret *url.URL) {
+	ret, _ = url.Parse(c.housekeepingURL.String())
+	return
+}
+
+func (c *Client) GetAppengineURL() (ret *url.URL) {
+	ret, _ = url.Parse(c.appEngineURL.String())
+	return
+}
+
+func (c *Client) GetRealmManagementURL() (ret *url.URL) {
+	ret, _ = url.Parse(c.realmManagementURL.String())
+	return
+}
+
 // nolint:gocognit
 func validate(c *Client) error {
 	if c.baseURL != nil && (c.appEngineURL != nil || c.realmManagementURL != nil || c.housekeepingURL != nil || c.pairingURL != nil) {
