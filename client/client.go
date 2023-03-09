@@ -206,22 +206,30 @@ func WithExpiry(expirySeconds int) Option {
 }
 
 func (c *Client) GetPairingURL() (ret *url.URL) {
-	ret, _ = url.Parse(c.pairingURL.String())
+	if c.pairingURL != nil {
+		ret, _ = url.Parse(c.pairingURL.String())
+	}
 	return
 }
 
 func (c *Client) GetHousekeepingURL() (ret *url.URL) {
-	ret, _ = url.Parse(c.housekeepingURL.String())
+	if c.housekeepingURL != nil {
+		ret, _ = url.Parse(c.housekeepingURL.String())
+	}
 	return
 }
 
 func (c *Client) GetAppengineURL() (ret *url.URL) {
-	ret, _ = url.Parse(c.appEngineURL.String())
+	if c.appEngineURL != nil {
+		ret, _ = url.Parse(c.appEngineURL.String())
+	}
 	return
 }
 
 func (c *Client) GetRealmManagementURL() (ret *url.URL) {
-	ret, _ = url.Parse(c.realmManagementURL.String())
+	if c.realmManagementURL != nil {
+		ret, _ = url.Parse(c.realmManagementURL.String())
+	}
 	return
 }
 
