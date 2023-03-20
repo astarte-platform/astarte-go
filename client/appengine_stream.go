@@ -33,7 +33,10 @@ type GetDatastreamSnapshotRequest struct {
 // GetDatastreamIndividualSnapshot builds a request to return all the last values on all paths for a Datastream individual aggregate interface.
 func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetDatastreamSnapshotRequest{req: req, expects: 200, aggregation: interfaces.IndividualAggregation}, nil
@@ -42,7 +45,10 @@ func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier 
 // GetDatastreamObjectSnapshot builds a request to return the last value for a Datastream object aggregate interface
 func (c *Client) GetDatastreamObjectSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	// Quirk: Astarte returns all data, we must limit to the first one
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", 1))
@@ -140,7 +146,10 @@ type GetPropertiesRequest struct {
 // GetAllProperties builds a request to return all the currently set Properties on a given interface.
 func (c *Client) GetAllProperties(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetPropertiesRequest{req: req, expects: 200}, nil
@@ -166,7 +175,8 @@ func (r GetPropertiesRequest) ToCurl(c *Client) string {
 // GetProperty builds a request to return the currently set Property on a given Interface at a given path.
 func (c *Client) GetProperty(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string, interfacePath string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName, interfacePath)
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName, interfacePath)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetPropertiesRequest{req: req, expects: 200}, nil
