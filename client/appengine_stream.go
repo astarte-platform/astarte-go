@@ -78,31 +78,28 @@ func (r GetDatastreamSnapshotRequest) ToCurl(c *Client) string {
 
 // GetDatastreamIndividualPaginator returns a Paginator for all the values on a path for a Datastream interface with individual aggregation.
 func (c *Client) GetDatastreamIndividualPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
 // GetDatastreamIndividualTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with individual aggregation.
 func (c *Client) GetDatastreamIndividualTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, since, to, pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, since, to, pageSize, resultSetOrder)
 }
 
 // GetDatastreamObjectPaginator returns a Paginator for all the values on a path for a Datastream interface with object aggregation.
 func (c *Client) GetDatastreamObjectPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
 // GetDatastreamObjectTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with object aggregation.
 func (c *Client) GetDatastreamObjectTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, since, to, pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, since, to, pageSize, resultSetOrder)
 }
 
 func (c *Client) getDatastreamPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string,
 	interfaceAggregation interfaces.AstarteInterfaceAggregation, since, to time.Time, pageSize int, resultSetOrder ResultSetOrder) (Paginator, error) {
-	baseURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName, interfacePath)
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	baseURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName, interfacePath)
 
 	datastreamPaginator := DatastreamPaginator{
 		baseURL:        baseURL,
