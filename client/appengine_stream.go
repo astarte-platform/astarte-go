@@ -33,7 +33,10 @@ type GetDatastreamSnapshotRequest struct {
 // GetDatastreamIndividualSnapshot builds a request to return all the last values on all paths for a Datastream individual aggregate interface.
 func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetDatastreamSnapshotRequest{req: req, expects: 200, aggregation: interfaces.IndividualAggregation}, nil
@@ -42,7 +45,10 @@ func (c *Client) GetDatastreamIndividualSnapshot(realm string, deviceIdentifier 
 // GetDatastreamObjectSnapshot builds a request to return the last value for a Datastream object aggregate interface
 func (c *Client) GetDatastreamObjectSnapshot(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	// Quirk: Astarte returns all data, we must limit to the first one
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", 1))
@@ -72,31 +78,28 @@ func (r GetDatastreamSnapshotRequest) ToCurl(c *Client) string {
 
 // GetDatastreamIndividualPaginator returns a Paginator for all the values on a path for a Datastream interface with individual aggregation.
 func (c *Client) GetDatastreamIndividualPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
 // GetDatastreamIndividualTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with individual aggregation.
 func (c *Client) GetDatastreamIndividualTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, since, to, pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.IndividualAggregation, since, to, pageSize, resultSetOrder)
 }
 
 // GetDatastreamObjectPaginator returns a Paginator for all the values on a path for a Datastream interface with object aggregation.
 func (c *Client) GetDatastreamObjectPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, time.Time{}, time.Now(), pageSize, resultSetOrder)
 }
 
 // GetDatastreamObjectTimeWindowPaginator returns a Paginator for all the values on a path in a specified time window for a Datastream interface with object aggregation.
 func (c *Client) GetDatastreamObjectTimeWindowPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string, since, to time.Time, resultSetOrder ResultSetOrder, pageSize int) (Paginator, error) {
-	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
-	return c.getDatastreamPaginator(realm, deviceIdentifier, resolvedDeviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, since, to, pageSize, resultSetOrder)
+	return c.getDatastreamPaginator(realm, deviceIdentifier, deviceIdentifierType, interfaceName, interfacePath, interfaces.ObjectAggregation, since, to, pageSize, resultSetOrder)
 }
 
 func (c *Client) getDatastreamPaginator(realm, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType, interfaceName, interfacePath string,
 	interfaceAggregation interfaces.AstarteInterfaceAggregation, since, to time.Time, pageSize int, resultSetOrder ResultSetOrder) (Paginator, error) {
-	baseURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName, interfacePath)
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	baseURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName, interfacePath)
 
 	datastreamPaginator := DatastreamPaginator{
 		baseURL:        baseURL,
@@ -140,7 +143,10 @@ type GetPropertiesRequest struct {
 // GetAllProperties builds a request to return all the currently set Properties on a given interface.
 func (c *Client) GetAllProperties(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName)
+	// Let's find the actual device identifier type
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	// and build the URL
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetPropertiesRequest{req: req, expects: 200}, nil
@@ -166,7 +172,8 @@ func (r GetPropertiesRequest) ToCurl(c *Client) string {
 // GetProperty builds a request to return the currently set Property on a given Interface at a given path.
 func (c *Client) GetProperty(realm string, deviceIdentifier string, deviceIdentifierType DeviceIdentifierType,
 	interfaceName string, interfacePath string) (AstarteRequest, error) {
-	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, deviceIdentifierType), interfaceName, interfacePath)
+	resolvedDeviceIdentifierType := resolveDeviceIdentifierType(deviceIdentifier, deviceIdentifierType)
+	callURL := makeURL(c.appEngineURL, "/v1/%s/%s/interfaces/%s%s", realm, devicePath(deviceIdentifier, resolvedDeviceIdentifierType), interfaceName, interfacePath)
 	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
 
 	return GetPropertiesRequest{req: req, expects: 200}, nil
