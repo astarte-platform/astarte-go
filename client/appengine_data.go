@@ -17,14 +17,17 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/astarte-platform/astarte-go/interfaces"
 	"github.com/iancoleman/orderedmap"
+	"github.com/nqd/flat"
 	"github.com/tidwall/gjson"
 )
 
@@ -317,8 +320,9 @@ func (s *DatastreamObjectValue) UnmarshalJSON(b []byte) error {
 
 // Parses data obtained by performing a request for a DatastreamPaginator page
 // and sets up the paginator for retrieving the next page.
-// Returns the page as an array of DatastreamIndividualValues or DatastreamObjectValue,
-// depending on the requested interface's aggregation.
+// According to the interface's aggregation and path, the return value can be one of:
+// []DatastreamObjectValue, map[string][]DatastreamObjectValue, []DatastreamIndividualValue,
+// map[string]DatastreamIndividualValue.
 func (r GetNextDatastreamPageResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
 	b, _ := io.ReadAll(r.res.Body)
@@ -347,13 +351,77 @@ func (r GetNextDatastreamPageResponse) Raw(f func(*http.Response) any) any {
 
 func (d *DatastreamPaginator) parseData(rawData []byte) any {
 	data := gjson.GetBytes(rawData, "data").Raw
-	return parseDatastream([]byte(data), d.aggregation)
+	jsonData := gjson.ParseBytes([]byte(data))
+	return parseDatastream(jsonData, d.aggregation)
 }
 
-func parseDatastream(rawData []byte, aggregation interfaces.AstarteInterfaceAggregation) any {
-	data := gjson.ParseBytes(rawData).Array()
+func parseDatastream(jsonData gjson.Result, aggregation interfaces.AstarteInterfaceAggregation) any {
+	// handle the case of individual aggregation
 	if aggregation == interfaces.IndividualAggregation {
-		individualValues := []DatastreamIndividualValue{}
+		return parseDatastreamWithIndividualAggregation(jsonData)
+	}
+
+	// handle object aggregation
+	return parseDatastreamWithObjectAggregation(jsonData)
+}
+
+func parseDatastreamWithObjectAggregation(jsonData gjson.Result) any {
+	if jsonData.IsArray() {
+		objectValues := []DatastreamObjectValue{}
+		data := jsonData.Array()
+		for _, v := range data {
+			value := DatastreamObjectValue{}
+			_ = json.Unmarshal([]byte(v.Raw), &value)
+			objectValues = append(objectValues, value)
+		}
+		return objectValues
+	}
+	// if not an array, it must be an object
+	obj := jsonData.Value().(map[string]interface{})
+
+	// now we need to flatten the object so that the common portion of the path can be factored out
+	// from each mapping
+	flattened, _ := flat.Flatten(obj, &flat.Options{Safe: true, Delimiter: "."})
+
+	keys := []string{}
+	for k := range flattened {
+		components := strings.Split(k, ".")
+		var theKey string
+		if len(components) > 1 {
+			theKey = strings.Join(components[:len(components)-1], ".")
+		} else {
+			theKey = k
+		}
+		keys = append(keys, theKey)
+	}
+	keys = removeDuplicateStr(keys)
+
+	// and once we have all the keys, we can get the object values
+	rawObjectValues := gjson.GetMany(jsonData.Raw, keys...)
+
+	ret := map[string][]DatastreamObjectValue{}
+	for i, item := range rawObjectValues {
+		values := []DatastreamObjectValue{}
+		value := DatastreamObjectValue{}
+
+		k := fmt.Sprintf("/%s", strings.ReplaceAll(keys[i], ".", "/"))
+
+		if item.IsArray() {
+			_ = json.Unmarshal([]byte(item.Raw), &values)
+			ret[k] = append(ret[k], values...)
+		} else {
+			_ = json.Unmarshal([]byte(item.Raw), &value)
+			ret[k] = append(ret[k], value)
+		}
+	}
+	return ret
+}
+
+func parseDatastreamWithIndividualAggregation(jsonData gjson.Result) any {
+	// first, we check if the complete timeseries is returned
+	individualValues := []DatastreamIndividualValue{}
+	if jsonData.IsArray() {
+		data := jsonData.Array()
 		for _, v := range data {
 			value := DatastreamIndividualValue{}
 			_ = json.Unmarshal([]byte(v.Raw), &value)
@@ -361,14 +429,45 @@ func parseDatastream(rawData []byte, aggregation interfaces.AstarteInterfaceAggr
 		}
 		return individualValues
 	}
-	// else, we're dealing with object aggregation (golint is now happy)
-	objectValues := []DatastreamObjectValue{}
-	for _, v := range data {
-		value := DatastreamObjectValue{}
-		_ = json.Unmarshal([]byte(v.Raw), &value)
-		objectValues = append(objectValues, value)
+
+	// if it's not a timeseries, it must be a snapshot (objects are returned)
+	obj := jsonData.Value().(map[string]interface{})
+
+	// now we need to flatten the object so that the common portion of the path can be factored out
+	// from each mapping
+	flattened, _ := flat.Flatten(obj, &flat.Options{Safe: true, Delimiter: "."})
+
+	keys := []string{}
+	for k := range flattened {
+		components := strings.Split(k, ".")
+		theKey := strings.Join(components[:len(components)-1], ".")
+		keys = append(keys, theKey)
 	}
-	return objectValues
+	keys = removeDuplicateStr(keys)
+
+	// and once we have all the keys, we can get the object values
+	rawIndividualValues := gjson.GetMany(jsonData.Raw, keys...)
+
+	ret := map[string]DatastreamIndividualValue{}
+	for i, item := range rawIndividualValues {
+		value := DatastreamIndividualValue{}
+		_ = json.Unmarshal([]byte(item.Raw), &value)
+		k := fmt.Sprintf("/%s", strings.ReplaceAll(keys[i], ".", "/"))
+		ret[k] = value
+	}
+	return ret
+}
+
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := map[string]struct{}{}
+	list := []string{}
+	for _, item := range strSlice {
+		if _, ok := allKeys[item]; !ok {
+			allKeys[item] = struct{}{}
+			list = append(list, item)
+		}
+	}
+	return list
 }
 
 func (d *DatastreamPaginator) computePageState(rawData []byte) {
@@ -424,7 +523,7 @@ func parseDatastreamSnapshot(jsonValue []byte, aggregation interfaces.AstarteInt
 	}
 	// else, we're dealing with object aggregation (golint is now happy)
 	retMap := map[string]DatastreamObjectValue{}
-	parseObjectDatastreamSnapshot([]byte(data.Raw), "", retMap)
+	parseObjectDatastreamSnapshot([]byte(data.Raw), retMap)
 	return retMap, nil
 }
 
@@ -445,28 +544,42 @@ func parseIndividualDatastreamSnapshot(jsonValue []byte, prefix string, acc map[
 	// No third option, maybe we should return an error here
 }
 
-func parseObjectDatastreamSnapshot(jsonValue []byte, prefix string, acc map[string]DatastreamObjectValue) {
-	if gjson.ParseBytes(jsonValue).IsObject() {
-		// Recursive case: we have a structure like
-		// {"path1": {"path2": [{ "f1": x1, "timestamp": "t", "f2": y1 }]}}
-		// Note that "timestamp" might also be a part of the path!
-		insideMap := gjson.ParseBytes(jsonValue).Map()
-		for k, v := range insideMap {
-			parseObjectDatastreamSnapshot([]byte(v.Raw), prefix+"/"+k, acc)
+func parseObjectDatastreamSnapshot(jsonValue []byte, acc map[string]DatastreamObjectValue) {
+	jsonData := gjson.ParseBytes(jsonValue)
+
+	// jsonData must be an object
+	obj := jsonData.Value().(map[string]interface{})
+	flattened, _ := flat.Flatten(obj, &flat.Options{Safe: true, Delimiter: "."})
+
+	keys := []string{}
+	for k := range flattened {
+		components := strings.Split(k, ".")
+		var theKey string
+		if len(components) > 1 {
+			theKey = strings.Join(components[:len(components)-1], ".")
+		} else {
+			theKey = k
 		}
-	} else if gjson.ParseBytes(jsonValue).IsArray() {
-		// Here we are almost at value level
-		// Since this is a snapshot, the array has just one element
-		// Example:  [{ "f1": x1, "timestamp": "t", "f2": y1 }]
-		insideArray := gjson.ParseBytes(jsonValue).Array()
-		for _, v := range insideArray {
-			// Base case: we have a { "f1": x1, "timestamp": "t", "f2": y1 } structure
-			val := DatastreamObjectValue{}
-			_ = json.Unmarshal([]byte(v.Raw), &val)
-			acc[prefix] = val
+		keys = append(keys, theKey)
+	}
+	keys = removeDuplicateStr(keys)
+
+	rawObjectValues := gjson.GetMany(jsonData.Raw, keys...)
+	for i, item := range rawObjectValues {
+		value := DatastreamObjectValue{}
+
+		k := fmt.Sprintf("/%s", strings.ReplaceAll(keys[i], ".", "/"))
+
+		if item.IsArray() {
+			// since it's a snapshot, we have just one value in the array
+			i := item.Array()[0]
+			_ = json.Unmarshal([]byte(i.Raw), &value)
+			acc[k] = value
+		} else {
+			_ = json.Unmarshal([]byte(item.Raw), &value)
+			acc[k] = value
 		}
 	}
-	// No third option, maybe we should return an error here
 }
 
 func (r GetDatastreamSnapshotResponse) Raw(f func(*http.Response) any) any {
