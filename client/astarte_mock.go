@@ -97,8 +97,20 @@ var (
 		}
 	 }
 	`
-	testGroupName  = "ah yes, a group"
-	testGroupLinks = map[string]string{"self": fmt.Sprintf("/v1/%s/groups/%s/devices", testRealmName, url.PathEscape(testGroupName))}
+	testGroupName    = "ah yes, a group"
+	testGroupLinks   = map[string]string{"self": fmt.Sprintf("/v1/%s/groups/%s/devices", testRealmName, url.PathEscape(testGroupName))}
+	testPolicyName   = "ah_yes_a_policy"
+	testPoliciesList = []string{testPolicyName, "ah_yes_another_policy"}
+	testPolicy       = `{
+		"name" : "ah_yes_a_policy",
+		"maximum_capacity" : 100,
+		"error_handlers" : [
+			{
+				"on" : "any_error",
+				"strategy" : "discard"
+			}
+		]
+	  }`
 )
 
 func astarteAPIMock(w http.ResponseWriter, req *http.Request) {
@@ -193,6 +205,28 @@ func astarteAPIMock(w http.ResponseWriter, req *http.Request) {
 			reply = map[string]interface{}{"data": trigger}
 		} else if req.Method == http.MethodDelete {
 			// delete trigger
+			reply = map[string]interface{}{"data": ""}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	case req.URL.Path == fmt.Sprintf("/realmmanagement/v1/%s/policies", testRealmName):
+		if req.Method == http.MethodGet {
+			// policy list
+			reply = map[string]interface{}{"data": testPoliciesList}
+		} else if req.Method == http.MethodPost {
+			// install policy
+			policy := map[string]any{}
+			_ = json.Unmarshal([]byte(testPolicy), &policy)
+			reply = map[string]interface{}{"data": policy}
+			w.WriteHeader(http.StatusCreated)
+		}
+	case req.URL.Path == fmt.Sprintf("/realmmanagement/v1/%s/policies/%s", testRealmName, testPolicyName):
+		if req.Method == http.MethodGet {
+			// get policy
+			policy := map[string]any{}
+			_ = json.Unmarshal([]byte(testPolicy), &policy)
+			reply = map[string]interface{}{"data": policy}
+		} else if req.Method == http.MethodDelete {
+			// delete policy
 			reply = map[string]interface{}{"data": ""}
 			w.WriteHeader(http.StatusNoContent)
 		}
