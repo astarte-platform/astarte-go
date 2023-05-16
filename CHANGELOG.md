@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - BREAKING: Remove the 0.90.1 Astarte client API and introduce a clean, idiomatic API.
   See [#33](https://github.com/astarte-platform/astarte-go/issues/33).
 
+### Fixed
+- `Raw` properly updates the paginator's state when retrieving paginated data.
+
 ## [0.90.1] - 2021-03-03
 ### Changed
 - Update dependencies
