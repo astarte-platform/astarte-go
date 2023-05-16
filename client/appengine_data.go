@@ -15,6 +15,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net"
@@ -108,8 +109,29 @@ func (r GetNextDeviceListPageResponse) Parse() (any, error) {
 	return data, nil
 }
 
+func updatePaginator(p Paginator, res *http.Response) io.ReadCloser {
+	b, _ := io.ReadAll(res.Body)
+
+	// Create a helper ReadCloser to keep a copy of the response body
+	readCloser := io.NopCloser(bytes.NewReader(b))
+
+	// update the state of the paginator
+	p.computePageState(b)
+
+	// and return a copy of the body
+	return readCloser
+}
+
+// Raw allows to supply a custom http Response handling function for the Astarte
+// response. The handling function must not close the body of the response. Moreover,
+// Raw sets up the paginator for retrieving the next page.
+// Raw simply returns the value returned by the handling function.
 func (r GetNextDeviceListPageResponse) Raw(f func(*http.Response) any) any {
 	defer r.res.Body.Close()
+
+	p := (*r.paginator).(*DeviceListPaginator)
+	r.res.Body = updatePaginator(p, r.res)
+
 	return f(r.res)
 }
 
@@ -310,8 +332,16 @@ func (r GetNextDatastreamPageResponse) Parse() (any, error) {
 	return data, nil
 }
 
+// Raw allows to supply a custom http Response handling function for the Astarte
+// response. The handling function must not close the body of the response. Moreover,
+// Raw sets up the paginator for retrieving the next page.
+// Raw simply returns the value returned by the handling function.
 func (r GetNextDatastreamPageResponse) Raw(f func(*http.Response) any) any {
 	defer r.res.Body.Close()
+
+	p := (*r.paginator).(*DatastreamPaginator)
+	r.res.Body = updatePaginator(p, r.res)
+
 	return f(r.res)
 }
 

@@ -26,6 +26,7 @@ type AstarteResponse interface {
 	Parse() (any, error)
 	// Raw allows to supply a custom http Response handling function for the Astarte
 	// response. The function does not need to close the response body.
+	// Raw simply returns the value returned by the handling function.
 	Raw(func(*http.Response) any) any
 }
 
