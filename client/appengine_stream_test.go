@@ -63,7 +63,7 @@ func TestParseDatastreamObjectSnapshot(t *testing.T) {
 	 }
 	`
 	retMap := map[string]DatastreamObjectValue{}
-	parseObjectDatastreamSnapshot([]byte(gjson.GetBytes([]byte(value), "data").Raw), "", retMap)
+	parseObjectDatastreamSnapshot([]byte(gjson.GetBytes([]byte(value), "data").Raw), retMap)
 	for k, v := range retMap {
 		if k == "/foo" {
 			barV, ok := v.Values.Get("bar")
@@ -104,7 +104,8 @@ func TestParseDatastreamObject(t *testing.T) {
 	}
 	`
 	parsed := []DatastreamObjectValue{}
-	parseDatastream([]byte(gjson.GetBytes([]byte(value), "data").Raw), interfaces.ObjectAggregation)
+	jsonData := gjson.ParseBytes([]byte(gjson.GetBytes([]byte(value), "data").Raw))
+	parseDatastream(jsonData, interfaces.ObjectAggregation)
 	for _, v := range parsed {
 		barV, ok := v.Values.Get("bar")
 		if !ok {

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - `Raw` properly updates the paginator's state when retrieving paginated data.
+- Fix the logic for retrieving data from Appengine API for both time series and data snapshots.
 
 ## [0.90.1] - 2021-03-03
 ### Changed
