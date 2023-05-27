@@ -17,6 +17,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/astarte-platform/astarte-go/interfaces"
@@ -93,7 +94,7 @@ func TestInstallInterface(t *testing.T) {
 	fmt.Println(testIface)
 
 	c, _ := getTestContext(t)
-	installInterfaceCall, err := c.InstallInterface(testRealmName, testIface)
+	installInterfaceCall, err := c.InstallInterface(testRealmName, testIface, true)
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,6 +111,41 @@ func TestInstallInterface(t *testing.T) {
 	//let's just assume it's enough
 	if iface.Name != testIface.Name || iface.MajorVersion != testIface.MajorVersion || iface.MinorVersion != testIface.MinorVersion || iface.Type != testIface.Type {
 		t.Error("Failed installing interface, different interface values")
+	}
+}
+
+func TestInstallInterface_URL(t *testing.T) {
+	testIface, _ := interfaces.ParseInterface([]byte(testInterface))
+	c, _ := getTestContext(t)
+
+	tests := []struct {
+		name    string
+		isAsync bool
+		url     string
+	}{
+		{
+			name:    "Async operation",
+			isAsync: true,
+			url:     "/realmmanagement/v1/test/interfaces'",
+		},
+		{
+			name:    "Sync operation",
+			isAsync: false,
+			url:     "/realmmanagement/v1/test/interfaces?async_operation=false'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			installInterfaceCall, err := c.InstallInterface(testRealmName, testIface, tc.isAsync)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !strings.Contains(installInterfaceCall.ToCurl(c), tc.url) {
+				t.Errorf("%v does not contain %s", installInterfaceCall.ToCurl(c), tc.url)
+			}
+		})
 	}
 }
 
@@ -132,7 +168,7 @@ func TestDeleteInterface(t *testing.T) {
 func TestUpdateInterface(t *testing.T) {
 	testIface, _ := interfaces.ParseInterface([]byte(testInterface))
 	c, _ := getTestContext(t)
-	updateInterfaceCall, err := c.UpdateInterface(testRealmName, testInterfaceName, testInterfaceMajor, testIface)
+	updateInterfaceCall, err := c.UpdateInterface(testRealmName, testInterfaceName, testInterfaceMajor, testIface, true)
 	if err != nil {
 		t.Error(err)
 	}
@@ -143,6 +179,47 @@ func TestUpdateInterface(t *testing.T) {
 	_, err = res.Parse()
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestUpdateInterface_URL(t *testing.T) {
+	testIface, _ := interfaces.ParseInterface([]byte(testInterface))
+	c, _ := getTestContext(t)
+
+	tests := []struct {
+		name    string
+		isAsync bool
+		url     string
+	}{
+		{
+			name:    "Async operation",
+			isAsync: true,
+			url:     "/realmmanagement/v1/test/interfaces/ah.yes.an.Interface/1'",
+		},
+		{
+			name:    "Sync operation",
+			isAsync: false,
+			url:     "/realmmanagement/v1/test/interfaces/ah.yes.an.Interface/1?async_operation=false'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			updateInterfaceCall, err := c.UpdateInterface(
+				testRealmName,
+				testInterfaceName,
+				testInterfaceMajor,
+				testIface,
+				tc.isAsync,
+			)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !strings.Contains(updateInterfaceCall.ToCurl(c), tc.url) {
+				t.Errorf("%v does not contain %s", updateInterfaceCall.ToCurl(c), tc.url)
+			}
+		})
 	}
 }
 

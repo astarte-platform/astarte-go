@@ -72,3 +72,13 @@ func makeURL(base *url.URL, pathFormat string, args ...interface{}) *url.URL {
 	callURL.Path = path.Join(callURL.Path, fmt.Sprintf(pathFormat, args...))
 	return callURL
 }
+
+// setupURLQuery setups URL query parameters
+func setupURLQuery(u *url.URL, queries map[string]string) *url.URL {
+	q := u.Query()
+	for k, v := range queries {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+	return u
+}
