@@ -17,6 +17,7 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/astarte-platform/astarte-go/interfaces"
 	"moul.io/http2curl"
@@ -118,8 +119,14 @@ type InstallInterfaceRequest struct {
 }
 
 // InstallInterface builds a request to install a new major version of an Interface into the Realm.
-func (c *Client) InstallInterface(realm string, interfacePayload interfaces.AstarteInterface) (AstarteRequest, error) {
+func (c *Client) InstallInterface(realm string, interfacePayload interfaces.AstarteInterface, isAsync bool) (AstarteRequest, error) {
 	callURL := makeURL(c.realmManagementURL, "/v1/%s/interfaces", realm)
+
+	if !isAsync {
+		query := map[string]string{"async_operation": strconv.FormatBool(false)}
+		callURL = setupURLQuery(callURL, query)
+	}
+
 	payload, _ := makeBody(interfacePayload)
 	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
 
@@ -179,8 +186,14 @@ type UpdateInterfaceRequest struct {
 }
 
 // UpdateInterface builds a request to update an existing major version of an Interface to a new minor.
-func (c *Client) UpdateInterface(realm string, interfaceName string, interfaceMajor int, interfacePayload interfaces.AstarteInterface) (AstarteRequest, error) {
+func (c *Client) UpdateInterface(realm string, interfaceName string, interfaceMajor int, interfacePayload interfaces.AstarteInterface, isAsync bool) (AstarteRequest, error) {
 	callURL := makeURL(c.realmManagementURL, "/v1/%s/interfaces/%s/%s", realm, interfaceName, fmt.Sprintf("%v", interfaceMajor))
+
+	if !isAsync {
+		query := map[string]string{"async_operation": strconv.FormatBool(false)}
+		callURL = setupURLQuery(callURL, query)
+	}
+
 	payload, _ := makeBody(interfacePayload)
 	req := c.makeHTTPrequest(http.MethodPut, callURL, payload)
 

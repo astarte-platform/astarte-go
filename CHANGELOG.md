@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Replace device `metadata` with `attributes`.
 - BREAKING: Remove the 0.90.1 Astarte client API and introduce a clean, idiomatic API.
   See [#33](https://github.com/astarte-platform/astarte-go/issues/33).
+- BREAKING: add the `isAsync` parameter to InstallInterface and UpdateInterface functions to allow synchronous calls.
 
 ### Fixed
 - `Raw` properly updates the paginator's state when retrieving paginated data.
