@@ -126,7 +126,7 @@ func (r GetNextDatastreamPageRequest) handleNextDatastreamPageFail(res *http.Res
 	return Empty{}, errorFromJSONErrors(res.Body)
 }
 
-func (r GetNextDatastreamPageRequest) ToCurl(c *Client) string {
+func (r GetNextDatastreamPageRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

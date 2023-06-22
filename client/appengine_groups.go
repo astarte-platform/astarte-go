@@ -58,7 +58,7 @@ func (r ListGroupsRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListGroupsResponse{res: res}, nil
 }
 
-func (r ListGroupsRequest) ToCurl(c *Client) string {
+func (r ListGroupsRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -96,7 +96,7 @@ func (r CreateGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	return CreateGroupResponse{res: res}, nil
 }
 
-func (r CreateGroupRequest) ToCurl(c *Client) string {
+func (r CreateGroupRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -146,7 +146,7 @@ func (r AddDeviceToGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r AddDeviceToGroupRequest) ToCurl(c *Client) string {
+func (r AddDeviceToGroupRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -181,7 +181,7 @@ func (r RemoveDeviceFromGroupRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r RemoveDeviceFromGroupRequest) ToCurl(c *Client) string {
+func (r RemoveDeviceFromGroupRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

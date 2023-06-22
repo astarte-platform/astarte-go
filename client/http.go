@@ -30,14 +30,14 @@ type AstarteRequest interface {
 	Run(c *Client) (AstarteResponse, error)
 	// ToCurl returns the curl command equivalent to the provided astarteRequest.
 	// This does not execute neither the request nor the command.
-	ToCurl(c *Client) string
+	ToCurl(_ *Client) string
 }
 
 // The Empty struct represent errors, method implementations are bogus
 type Empty struct{}
 
-func (r Empty) Run(c *Client) (AstarteResponse, error) { return Empty{}, nil }
-func (r Empty) ToCurl(c *Client) string                { return "" }
+func (r Empty) Run(_ *Client) (AstarteResponse, error) { return Empty{}, nil }
+func (r Empty) ToCurl(_ *Client) string                { return "" }
 
 func (c *Client) makeHTTPrequest(method string, url *url.URL, payload io.Reader) *http.Request {
 	return c.makeHTTPrequestWithContentType(method, url, payload, "application/json")

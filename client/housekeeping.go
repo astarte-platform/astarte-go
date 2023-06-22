@@ -46,7 +46,7 @@ func (r ListRealmsRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListRealmsResponse{res: res}, nil
 }
 
-func (r ListRealmsRequest) ToCurl(c *Client) string {
+func (r ListRealmsRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -76,7 +76,7 @@ func (r GetRealmRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetRealmResponse{res: res}, nil
 }
 
-func (r GetRealmRequest) ToCurl(c *Client) string {
+func (r GetRealmRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -186,7 +186,7 @@ func (r CreateRealmRequest) Run(c *Client) (AstarteResponse, error) {
 	return CreateRealmResponse{res: res}, nil
 }
 
-func (r CreateRealmRequest) ToCurl(c *Client) string {
+func (r CreateRealmRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

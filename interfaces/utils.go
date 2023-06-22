@@ -185,25 +185,25 @@ func NormalizePayload(payload interface{}, encodeBytes bool) interface{} {
 			// Create a reflect Map for map[string]interface{}. This because type conversions might happen
 			// e.g.: []byte -> string
 			targetType := map[string]interface{}{}
-			copy := reflect.New(reflect.TypeOf(targetType)).Elem()
-			copy.Set(reflect.MakeMap(reflect.TypeOf(targetType)))
+			theCopy := reflect.New(reflect.TypeOf(targetType)).Elem()
+			theCopy.Set(reflect.MakeMap(reflect.TypeOf(targetType)))
 			for _, key := range v.MapKeys() {
 				originalValue := v.MapIndex(key)
 				// Normalize inner value
 				normalizedValue := reflect.ValueOf(NormalizePayload(originalValue.Interface(), encodeBytes))
-				copy.SetMapIndex(key, normalizedValue)
+				theCopy.SetMapIndex(key, normalizedValue)
 			}
-			payload = copy.Interface()
+			payload = theCopy.Interface()
 		case reflect.Slice:
 			// Create a reflect Slice for []interface{}. This because type conversions might happen
 			// e.g.: []byte -> string
 			targetType := []interface{}{}
-			copy := reflect.New(reflect.TypeOf(targetType)).Elem()
-			copy.Set(reflect.MakeSlice(reflect.TypeOf(targetType), v.Len(), v.Cap()))
+			theCopy := reflect.New(reflect.TypeOf(targetType)).Elem()
+			theCopy.Set(reflect.MakeSlice(reflect.TypeOf(targetType), v.Len(), v.Cap()))
 			for i := 0; i < v.Len(); i++ {
-				copy.Index(i).Set(reflect.ValueOf(NormalizePayload(v.Index(i).Interface(), encodeBytes)))
+				theCopy.Index(i).Set(reflect.ValueOf(NormalizePayload(v.Index(i).Interface(), encodeBytes)))
 			}
-			payload = copy.Interface()
+			payload = theCopy.Interface()
 		}
 	}
 
