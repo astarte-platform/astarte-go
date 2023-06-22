@@ -79,7 +79,7 @@ func (r GetDeviceDetailsRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetDeviceDetailsResponse{res: res}, nil
 }
 
-func (r GetDeviceDetailsRequest) ToCurl(c *Client) string {
+func (r GetDeviceDetailsRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -111,7 +111,7 @@ func (r GetDeviceIDFromAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetDeviceIDFromAliasResponse{res: res}, nil
 }
 
-func (r GetDeviceIDFromAliasRequest) ToCurl(c *Client) string {
+func (r GetDeviceIDFromAliasRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	// TODO check
 	return fmt.Sprintf("%s | grep 'DeviceID'\n", command)
@@ -144,7 +144,7 @@ func (r ListDeviceInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListDeviceInterfacesResponse{res: res}, nil
 }
 
-func (r ListDeviceInterfacesRequest) ToCurl(c *Client) string {
+func (r ListDeviceInterfacesRequest) ToCurl(_ *Client) string {
 	return ""
 }
 
@@ -173,7 +173,7 @@ func (r GetDevicesStatsRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetDeviceStatsResponse{res: res}, nil
 }
 
-func (r GetDevicesStatsRequest) ToCurl(c *Client) string {
+func (r GetDevicesStatsRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -206,7 +206,7 @@ func (r ListDeviceAliasesRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListDeviceAliasesResponse{res: res}, nil
 }
 
-func (r ListDeviceAliasesRequest) ToCurl(c *Client) string {
+func (r ListDeviceAliasesRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	// TODO check
 	return fmt.Sprintf("%s | grep 'Aliases'\n", command)
@@ -240,7 +240,7 @@ func (r AddDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r AddDeviceAliasRequest) ToCurl(c *Client) string {
+func (r AddDeviceAliasRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -274,7 +274,7 @@ func (r DeleteDeviceAliasRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r DeleteDeviceAliasRequest) ToCurl(c *Client) string {
+func (r DeleteDeviceAliasRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	// TODO check
 	return fmt.Sprint(command)
@@ -309,7 +309,7 @@ func (r InhibitDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r InhibitDeviceRequest) ToCurl(c *Client) string {
+func (r InhibitDeviceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	// TODO check
 	return fmt.Sprint(command)
@@ -342,7 +342,7 @@ func (r ListDeviceAttributesRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListDeviceAttributesResponse{res: res}, nil
 }
 
-func (r ListDeviceAttributesRequest) ToCurl(c *Client) string {
+func (r ListDeviceAttributesRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -375,7 +375,7 @@ func (r SetDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r SetDeviceAttributeRequest) ToCurl(c *Client) string {
+func (r SetDeviceAttributeRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -410,7 +410,7 @@ func (r DeleteDeviceAttributeRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r DeleteDeviceAttributeRequest) ToCurl(c *Client) string {
+func (r DeleteDeviceAttributeRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

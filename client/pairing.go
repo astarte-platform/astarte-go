@@ -56,7 +56,7 @@ func (r RegisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	return RegisterDeviceResponse{res: res}, nil
 }
 
-func (r RegisterDeviceRequest) ToCurl(c *Client) string {
+func (r RegisterDeviceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -88,7 +88,7 @@ func (r UnregisterDeviceRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r UnregisterDeviceRequest) ToCurl(c *Client) string {
+func (r UnregisterDeviceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -122,7 +122,7 @@ func (r NewDeviceCertificateRequest) Run(c *Client) (AstarteResponse, error) {
 	return NewDeviceCertificateResponse{res: res}, nil
 }
 
-func (r NewDeviceCertificateRequest) ToCurl(c *Client) string {
+func (r NewDeviceCertificateRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -155,7 +155,7 @@ func (r Mqttv1DeviceInformationRequest) Run(c *Client) (AstarteResponse, error) 
 	return Mqttv1DeviceInformationResponse{res: res}, nil
 }
 
-func (r Mqttv1DeviceInformationRequest) ToCurl(c *Client) string {
+func (r Mqttv1DeviceInformationRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

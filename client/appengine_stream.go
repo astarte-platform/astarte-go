@@ -71,7 +71,7 @@ func (r GetDatastreamSnapshotRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetDatastreamSnapshotResponse{res: res, aggregation: r.aggregation}, nil
 }
 
-func (r GetDatastreamSnapshotRequest) ToCurl(c *Client) string {
+func (r GetDatastreamSnapshotRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -164,7 +164,7 @@ func (r GetPropertiesRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetPropertiesResponse{res: res}, nil
 }
 
-func (r GetPropertiesRequest) ToCurl(c *Client) string {
+func (r GetPropertiesRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -254,7 +254,7 @@ func (r SendDatastreamRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r SendDatastreamRequest) ToCurl(c *Client) string {
+func (r SendDatastreamRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -290,7 +290,7 @@ func (r SetPropertyRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r SetPropertyRequest) ToCurl(c *Client) string {
+func (r SetPropertyRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -322,7 +322,7 @@ func (r UnsetPropertyRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r UnsetPropertyRequest) ToCurl(c *Client) string {
+func (r UnsetPropertyRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

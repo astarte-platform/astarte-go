@@ -72,7 +72,7 @@ func (r GetNextDeviceListPageRequest) Run(c *Client) (AstarteResponse, error) {
 }
 
 // Returns the curl command corresponding to the request to get the next page.
-func (r GetNextDeviceListPageRequest) ToCurl(c *Client) string {
+func (r GetNextDeviceListPageRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }

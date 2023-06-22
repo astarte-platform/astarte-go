@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Ispirata Srl
+// Copyright © 2019-2023 SECO Mind Srl
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func (r ListInterfacesRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListInterfacesResponse{res: res}, nil
 }
 
-func (r ListInterfacesRequest) ToCurl(c *Client) string {
+func (r ListInterfacesRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -78,7 +78,7 @@ func (r ListInterfaceMajorVersionsRequest) Run(c *Client) (AstarteResponse, erro
 	return ListInterfaceMajorVersionsResponse{res: res}, nil
 }
 
-func (r ListInterfaceMajorVersionsRequest) ToCurl(c *Client) string {
+func (r ListInterfaceMajorVersionsRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -108,7 +108,7 @@ func (r GetInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetInterfaceResponse{res: res}, nil
 }
 
-func (r GetInterfaceRequest) ToCurl(c *Client) string {
+func (r GetInterfaceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -145,7 +145,7 @@ func (r InstallInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	return InstallInterfaceResponse{res: res}, nil
 }
 
-func (r InstallInterfaceRequest) ToCurl(c *Client) string {
+func (r InstallInterfaceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -175,7 +175,7 @@ func (r DeleteInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r DeleteInterfaceRequest) ToCurl(c *Client) string {
+func (r DeleteInterfaceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -212,7 +212,7 @@ func (r UpdateInterfaceRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r UpdateInterfaceRequest) ToCurl(c *Client) string {
+func (r UpdateInterfaceRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -242,7 +242,7 @@ func (r ListTriggersRequest) Run(c *Client) (AstarteResponse, error) {
 	return ListTriggersResponse{res: res}, nil
 }
 
-func (r ListTriggersRequest) ToCurl(c *Client) string {
+func (r ListTriggersRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -272,7 +272,7 @@ func (r GetTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	return GetTriggerResponse{res: res}, nil
 }
 
-func (r GetTriggerRequest) ToCurl(c *Client) string {
+func (r GetTriggerRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -303,7 +303,7 @@ func (r InstallTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	return InstallTriggerResponse{res: res}, nil
 }
 
-func (r InstallTriggerRequest) ToCurl(c *Client) string {
+func (r InstallTriggerRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
@@ -333,7 +333,7 @@ func (r DeleteTriggerRequest) Run(c *Client) (AstarteResponse, error) {
 	return NoDataResponse{res: res}, nil
 }
 
-func (r DeleteTriggerRequest) ToCurl(c *Client) string {
+func (r DeleteTriggerRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
