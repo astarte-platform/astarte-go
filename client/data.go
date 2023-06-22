@@ -91,6 +91,18 @@ type InstallTriggerResponse struct {
 	res *http.Response
 }
 
+type ListTriggerDeliveryPoliciesResponse struct {
+	res *http.Response
+}
+
+type GetTriggerDeliveryPolicyResponse struct {
+	res *http.Response
+}
+
+type InstallTriggerDeliveryPolicyResponse struct {
+	res *http.Response
+}
+
 // AppEngine
 
 type GetNextDeviceListPageResponse struct {

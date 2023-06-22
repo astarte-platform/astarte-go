@@ -142,3 +142,57 @@ func (r InstallTriggerResponse) Raw(f func(*http.Response) any) any {
 	defer r.res.Body.Close()
 	return f(r.res)
 }
+
+// Parses data obtained by performing a request to list trigger delivery policies in a realm.
+// Returns the list of trigger delivery policy names as an array of strings.
+func (r ListTriggerDeliveryPoliciesResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
+	ret := []string{}
+	for _, v := range gjson.GetBytes(b, "data").Array() {
+		ret = append(ret, v.Str)
+	}
+	return ret, nil
+}
+func (r ListTriggerDeliveryPoliciesResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
+}
+
+// Parses data obtained by performing a request to retrieve a trigger delivery policy.
+// Returns the trigger delivery policy payload as a map[string]any.
+func (r GetTriggerDeliveryPolicyResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
+	v := []byte(gjson.GetBytes(b, "data").Raw)
+	ret := map[string]any{}
+	err := json.Unmarshal(v, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (r GetTriggerDeliveryPolicyResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
+}
+
+// Parses data obtained by performing a request to install a trigger delivery policy.
+// Returns the trigger delivery policy payload as a map[string]any.
+func (r InstallTriggerDeliveryPolicyResponse) Parse() (any, error) {
+	defer r.res.Body.Close()
+	b, _ := io.ReadAll(r.res.Body)
+	v := []byte(gjson.GetBytes(b, "data").Raw)
+	ret := map[string]any{}
+	err := json.Unmarshal(v, &ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (r InstallTriggerDeliveryPolicyResponse) Raw(f func(*http.Response) any) any {
+	defer r.res.Body.Close()
+	return f(r.res)
+}

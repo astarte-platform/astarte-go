@@ -308,3 +308,89 @@ func TestDeleteTrigger(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestListTriggerDeliveryPolicies(t *testing.T) {
+	c, _ := getTestContext(t)
+	listPoliciesCall, err := c.ListTriggerDeliveryPolicies(testRealmName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := listPoliciesCall.Run(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := res.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	policies, _ := data.([]string)
+	for i := 0; i < len(testPoliciesList); i++ {
+		if policies[i] != testPoliciesList[i] {
+			t.Errorf("Listed policies not matching: %s vs %s", policies[i], testPoliciesList[i])
+		}
+	}
+}
+
+func TestGetTriggerDeliveryPolicy(t *testing.T) {
+	c, _ := getTestContext(t)
+	getPolicyCall, err := c.GetTriggerDeliveryPolicy(testRealmName, testPolicyName)
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := getPolicyCall.Run(c)
+	if err != nil {
+		t.Error(err)
+	}
+	data, err := res.Parse()
+	if err != nil {
+		t.Error(err)
+	}
+	policyMap, _ := data.(map[string]interface{})
+	policyName, _ := policyMap["name"].(string)
+
+	//let's just assume it's enough
+	if policyName != testPolicyName {
+		t.Error("Failed getting policy, different policy values")
+	}
+}
+
+func TestInstallTriggerDeliveryPolicy(t *testing.T) {
+	c, _ := getTestContext(t)
+	policy := map[string]any{}
+	_ = json.Unmarshal([]byte(testPolicy), &policy)
+	installPolicyCall, err := c.InstallTriggerDeliveryPolicy(testRealmName, policy)
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := installPolicyCall.Run(c)
+	if err != nil {
+		t.Error(err)
+	}
+	data, err := res.Parse()
+	if err != nil {
+		t.Error(err)
+	}
+	policyMap, _ := data.(map[string]interface{})
+	policyName, _ := policyMap["name"].(string)
+
+	//let's just assume it's enough
+	if policyName != testPolicyName {
+		t.Error("Failed getting policy, different policy values")
+	}
+}
+
+func TestDeleteTriggerDeliveryPolicy(t *testing.T) {
+	c, _ := getTestContext(t)
+	deletePolicyCall, err := c.DeleteTriggerDeliveryPolicy(testRealmName, testPolicyName)
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := deletePolicyCall.Run(c)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = res.Parse()
+	if err != nil {
+		t.Error(err)
+	}
+}

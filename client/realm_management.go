@@ -337,3 +337,124 @@ func (r DeleteTriggerRequest) ToCurl(_ *Client) string {
 	command, _ := http2curl.GetCurlCommand(r.req)
 	return fmt.Sprint(command)
 }
+
+type ListTriggerDeliveryPoliciesRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// ListTriggerDeliveryPolicies builds a request to return all triggers delivery policies in a Realm.
+func (c *Client) ListTriggerDeliveryPolicies(realm string) (AstarteRequest, error) {
+	callURL := makeURL(c.realmManagementURL, "/v1/%s/policies", realm)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return ListTriggersRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r ListTriggerDeliveryPoliciesRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return ListTriggerDeliveryPoliciesResponse{res: res}, nil
+}
+
+func (r ListTriggerDeliveryPoliciesRequest) ToCurl(_ *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type GetTriggerDeliveryPolicyRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// GetTriggerDeliveryPolicy builds a request to return a trigger delivery policy installed in a Realm.
+func (c *Client) GetTriggerDeliveryPolicy(realm string, policyName string) (AstarteRequest, error) {
+	callURL := makeURL(c.realmManagementURL, "/v1/%s/policies/%s", realm, policyName)
+	req := c.makeHTTPrequest(http.MethodGet, callURL, nil)
+
+	return GetTriggerDeliveryPolicyRequest{req: req, expects: 200}, nil
+}
+
+// nolint:bodyclose
+func (r GetTriggerDeliveryPolicyRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return GetTriggerDeliveryPolicyResponse{res: res}, nil
+}
+
+func (r GetTriggerDeliveryPolicyRequest) ToCurl(_ *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type InstallTriggerDeliveryPolicyRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// InstallTriggerDeliveryPolicy builds a request to install a Trigger delivery policy into the Realm.
+func (c *Client) InstallTriggerDeliveryPolicy(realm string, policyPayload any) (AstarteRequest, error) {
+	callURL := makeURL(c.realmManagementURL, "/v1/%s/policies", realm)
+	payload, _ := makeBody(policyPayload)
+	req := c.makeHTTPrequest(http.MethodPost, callURL, payload)
+
+	return InstallTriggerDeliveryPolicyRequest{req: req, expects: 201}, nil
+}
+
+// nolint:bodyclose
+func (r InstallTriggerDeliveryPolicyRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return InstallTriggerDeliveryPolicyResponse{res: res}, nil
+}
+
+func (r InstallTriggerDeliveryPolicyRequest) ToCurl(_ *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
+
+type DeleteTriggerDeliveryPolicyRequest struct {
+	req     *http.Request
+	expects int
+}
+
+// DeleteTriggerDeliveryPolicy builds a request to delete a Trigger delivery policy from the Realm.
+func (c *Client) DeleteTriggerDeliveryPolicy(realm string, policyName string) (AstarteRequest, error) {
+	callURL := makeURL(c.realmManagementURL, "/v1/%s/policies/%s", realm, policyName)
+	req := c.makeHTTPrequest(http.MethodDelete, callURL, nil)
+
+	return DeleteTriggerDeliveryPolicyRequest{req: req, expects: 204}, nil
+}
+
+// nolint:bodyclose
+func (r DeleteTriggerDeliveryPolicyRequest) Run(c *Client) (AstarteResponse, error) {
+	res, err := c.httpClient.Do(r.req)
+	if err != nil {
+		return Empty{}, err
+	}
+	if res.StatusCode != r.expects {
+		return runAstarteRequestError(res, r.expects)
+	}
+	return NoDataResponse{res: res}, nil
+}
+
+func (r DeleteTriggerDeliveryPolicyRequest) ToCurl(_ *Client) string {
+	command, _ := http2curl.GetCurlCommand(r.req)
+	return fmt.Sprint(command)
+}
