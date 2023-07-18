@@ -15,7 +15,6 @@
 package interfaces
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"path"
@@ -158,21 +157,12 @@ func ValidateInterfacePath(astarteInterface AstarteInterface, interfacePath stri
 // Astarte. encodeBytes controls whether []byte types should be encoded in base64, used for data structures which do not
 // support bytes (e.g.: JSON)
 func NormalizePayload(payload interface{}, encodeBytes bool) interface{} {
-	// Normalize payload as much as possible. In particular, we want to send base64 data in case we're dealing with a bytearray,
+	// Normalize payload as much as possible.
 	// and ensure time is always UTC
 	switch v := payload.(type) {
-	case []byte:
-		if encodeBytes {
-			payload = base64.StdEncoding.EncodeToString(v)
-		}
-	case [][]byte:
-		if encodeBytes {
-			newSlice := []string{}
-			for _, entry := range v {
-				newSlice = append(newSlice, base64.StdEncoding.EncodeToString(entry))
-			}
-			payload = newSlice
-		}
+	case []byte, [][]byte:
+		// No encoding needed here. Bytes will be base64 encoded when
+		// the payload is serialized to json.
 	case time.Time:
 		payload = v.UTC()
 	case *time.Time:

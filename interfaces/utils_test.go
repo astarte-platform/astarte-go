@@ -16,7 +16,6 @@ package interfaces
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -496,15 +495,22 @@ func TestFailedTypeValidation(t *testing.T) {
 	if err := ValidateIndividualMessage(i, "/stringValue", 42); err == nil {
 		t.Fail()
 	}
+	if err := ValidateIndividualMessage(i, "/binaryblobValue", "blob"); err == nil {
+		t.Fail()
+	}
+	if err := ValidateIndividualMessage(i, "/binaryblobarrayValue", []string{"blob1", "blob2"}); err == nil {
+		t.Fail()
+	}
 }
 
 func TestPayloadNormalization(t *testing.T) {
 	byteArray := []byte{'a', 's', 't', 'a', 'r', 't', 'e'}
-	if NormalizePayload(byteArray, true).(string) != base64.StdEncoding.EncodeToString(byteArray) {
-		t.Error("Base64 matching in normalization failed")
+	// ensure that the normalization step won't alter the content of the byteArray
+	if !bytes.Equal(NormalizePayload(byteArray, true).([]byte), byteArray) {
+		t.Error("Byte array is altered during the normalization step")
 	}
 	if !bytes.Equal(NormalizePayload(byteArray, false).([]byte), byteArray) {
-		t.Error("Base64 matching in normalization failed")
+		t.Error("Byte array is altered during the normalization step")
 	}
 
 	timestamp := time.Now()
@@ -530,33 +536,12 @@ func TestPayloadNormalization(t *testing.T) {
 		t.Error("Map conversion failed", NormalizePayload(inInterfaceMap, true), outMap)
 	}
 
-	inSlice := [][]byte{byteArray}
-	outSlice := []string{base64.StdEncoding.EncodeToString(byteArray)}
-
-	if !reflect.DeepEqual(NormalizePayload(inSlice, true), outSlice) {
-		t.Error("Slice conversion failed", NormalizePayload(inSlice, true), outSlice)
-	}
-
-	inInterfaceSlice := []interface{}{byteArray}
-	outInterfaceSlice := []interface{}{base64.StdEncoding.EncodeToString(byteArray)}
-
-	if !reflect.DeepEqual(NormalizePayload(inInterfaceSlice, true), outInterfaceSlice) {
-		t.Error("Slice conversion failed", NormalizePayload(inInterfaceSlice, true), outInterfaceSlice)
-	}
-
 	inMultiMap := map[string]interface{}{
 		"testTime":            timestamp.In(loc),
 		"testBytearray":       byteArray,
 		"testNestedBytearray": [][]byte{byteArray},
 		"testString":          "test",
 		"testStringArray":     []string{"test"},
-	}
-	outMultiMapEncoded := map[string]interface{}{
-		"testTime":            timestamp.UTC(),
-		"testBytearray":       base64.StdEncoding.EncodeToString(byteArray),
-		"testNestedBytearray": []string{base64.StdEncoding.EncodeToString(byteArray)},
-		"testString":          "test",
-		"testStringArray":     []interface{}{"test"},
 	}
 	outMultiMapNonEncoded := map[string]interface{}{
 		"testTime":            timestamp.UTC(),
@@ -566,9 +551,6 @@ func TestPayloadNormalization(t *testing.T) {
 		"testStringArray":     []interface{}{"test"},
 	}
 
-	if !reflect.DeepEqual(NormalizePayload(inMultiMap, true), outMultiMapEncoded) {
-		t.Error("Multimap conversion failed", NormalizePayload(inMultiMap, true), outMultiMapEncoded)
-	}
 	if !reflect.DeepEqual(NormalizePayload(inMultiMap, false), outMultiMapNonEncoded) {
 		t.Error("Multimap conversion failed", NormalizePayload(inMultiMap, false), outMultiMapNonEncoded)
 	}
