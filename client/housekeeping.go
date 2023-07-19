@@ -160,7 +160,7 @@ func WithReplicationFactor(replicationFactor int) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.ReplicationFactor = replicationFactor
 		//nolint:gosimple
-		req.ReplicationClass = fmt.Sprintf("\"SimpleStrategy\"")
+		req.ReplicationClass = fmt.Sprintf("SimpleStrategy")
 	}
 }
 
