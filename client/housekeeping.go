@@ -169,8 +169,7 @@ func WithReplicationFactor(replicationFactor int) realmOption {
 func WithDatacenterReplicationFactors(datacenterReplicationFactors map[string]int) realmOption {
 	return func(req *newRealmRequestBuilder) {
 		req.DatacenterReplicationFactors = datacenterReplicationFactors
-		//nolint:gosimple
-		req.ReplicationClass = fmt.Sprintf("\"NetworkTopologyStrategy\"")
+		req.ReplicationClass = fmt.Sprintf("NetworkTopologyStrategy")
 	}
 }
 
