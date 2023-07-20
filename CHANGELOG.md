@@ -6,8 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [0.91.1] - Unreleased
 ### Fixed
-- Allow the creation of realms when using network topology strategy. Fixes a regression introduced
-  in v0.91.0.
+- Allow the creation of realms when explicitly setting a replication class. Fixes a regression
+  introduced in v0.91.0.
 
 ## [0.91.0] - 2023-05-29
 ### Changed
