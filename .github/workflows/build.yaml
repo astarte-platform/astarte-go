@@ -34,6 +34,7 @@ jobs:
         go:
         - 1.19.x
         - 1.20.x
+        - 1.21.x
         os:
         - ubuntu-22.04
         - macos-latest
@@ -52,13 +53,13 @@ jobs:
 
     - name: Test (with coverprofile)
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-      if: matrix.os == 'ubuntu-22.04' && matrix.go == '1.20.x'
+      if: matrix.os == 'ubuntu-22.04' && matrix.go == '1.21.x'
 
     - name: Test (no coverprofile)
       run: go test -v -race ./...
-      if: matrix.os != 'ubuntu-22.04' || matrix.go != '1.20.x'
+      if: matrix.os != 'ubuntu-22.04' || matrix.go != '1.21.x'
 
     # Upload coverage report only in one case of the matrix
     - name: Upload coverage report
       uses: codecov/codecov-action@v3
-      if: matrix.os == 'ubuntu-22.04' && matrix.go == '1.20.x'
+      if: matrix.os == 'ubuntu-22.04' && matrix.go == '1.21.x'
