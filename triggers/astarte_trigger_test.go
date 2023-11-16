@@ -20,7 +20,6 @@ import (
 )
 
 func TestMissingDataFromTriggerAction(t *testing.T) {
-
 	MissingTriggerName := `
 	{
 		"action": {
@@ -253,10 +252,8 @@ func TestInvalidTriggerData(t *testing.T) {
 	if err == nil {
 		t.Error("This trigger should have failed validation! mismatched 'on' condition for trigger type")
 	}
-
 }
 func TestInvalidTriggerInterface(t *testing.T) {
-
 	DeviceTriggerInterfaceNull := `
 	{
 		"name": "test",
@@ -346,11 +343,9 @@ func TestInvalidTriggerInterface(t *testing.T) {
 	if err != nil {
 		t.Error("This trigger should have passed!")
 	}
-
 }
 
 func TestInvalidTriggerGenericErrors(t *testing.T) {
-
 	DeviceTriggerGroupAndID := `
 	{
 		"name": "test",
@@ -392,10 +387,9 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 	_, err = ParseTriggerFrom([]byte(DeviceTriggerNoAction))
 	if err == nil {
 		t.Error("This trigger should have Failed! required action")
-
 	}
 
-	DeviceTriggerNoTriggers := `
+	DeviceTriggerNoSimpleTriggers := `
 	{
 		"name": "test",
 		"action": {
@@ -405,12 +399,12 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 		"simple_triggers": []
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerNoTriggers))
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerNoSimpleTriggers))
 	if err == nil {
 		t.Error("This trigger should have Failed! one trigger definition is required")
 	}
 
-	DeviceTriggerTooManyTriggers := `
+	DeviceTriggerTooManySimpleTriggers := `
 	{
 		"name": "test",
 		"action": {
@@ -437,7 +431,7 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 		]
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerTooManyTriggers))
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerTooManySimpleTriggers))
 	if err == nil {
 		t.Error("This trigger should have Failed! Too many triggers defined")
 	}
@@ -498,7 +492,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 			"on": "device_connected",
 			"device_id": "dsagfsda",
 			"interface_name": "*"
-
 		  }
 		]
 	  }`
@@ -519,7 +512,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 		  {
 			"type": "data_trigger",
 			"on": "device_disconnected"
-
 		  }
 		]
 	  }`
@@ -562,7 +554,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 			"type": "data_trigger",
 			"on": "incoming_data",
 			"interface_name": "*"
-
 		  }
 		]
 	  }`
@@ -585,7 +576,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 			"on": "incoming_data",
 			"interface_name": "*",
 			"match_path":"/*"
-
 		  }
 		]
 	  }`
@@ -609,7 +599,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 			"interface_name": "*",
 			"match_path":"/*",
 			"value_match_operator":"=="
-
 		  }
 		]
 	  }`
@@ -618,12 +607,10 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 	if err == nil {
 		t.Error("This trigger should have Failed!invalid data for trigger type data")
 	}
-
 }
 
 //nolint:all
 func TestParsing(t *testing.T) {
-
 	DataTriggerOk := `
 	{
 		"name": "example_trigger",
@@ -675,5 +662,4 @@ func TestParsing(t *testing.T) {
 	if err != nil {
 		t.Error("This trigger should have passed ", err.Error())
 	}
-
 }
