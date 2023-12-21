@@ -169,7 +169,7 @@ func (o *AstarteHTTPMethod) UnmarshalJSON(b []byte) error {
 type AstarteTriggerAction struct {
 	HTTPUrl         string            `json:"http_url"`
 	HTTPMethod      AstarteHTTPMethod `json:"http_method"`
-	HTTPHeaders     string            `json:"http_static_headers"`
+	HTTPHeaders     map[string]string `json:"http_static_headers"`
 	IgnoreSslErrors bool              `default:"false"`
 }
 type AstarteSimpleTrigger struct {
