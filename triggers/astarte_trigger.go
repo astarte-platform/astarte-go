@@ -308,7 +308,7 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 		if trigger.ValueMatchOperator == nil {
 			return errors.New("Invalid data trigger: ValueMatchOperator not set")
 		}
-		if trigger.KnownValue == nil {
+		if trigger.KnownValue == nil && *trigger.ValueMatchOperator != "*" {
 			return errors.New("Invalid data trigger: KnownValue not set")
 		}
 
