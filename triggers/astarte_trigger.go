@@ -169,7 +169,7 @@ func (o *AstarteHTTPMethod) UnmarshalJSON(b []byte) error {
 type AstarteTriggerAction struct {
 	HTTPUrl         string            `json:"http_url"`
 	HTTPMethod      AstarteHTTPMethod `json:"http_method"`
-	HTTPHeaders     string            `json:"http_static_headers"`
+	HTTPHeaders     map[string]string `json:"http_static_headers"`
 	IgnoreSslErrors bool              `default:"false"`
 }
 type AstarteSimpleTrigger struct {
@@ -308,7 +308,7 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 		if trigger.ValueMatchOperator == nil {
 			return errors.New("Invalid data trigger: ValueMatchOperator not set")
 		}
-		if trigger.KnownValue == nil {
+		if trigger.KnownValue == nil && *trigger.ValueMatchOperator != "*" {
 			return errors.New("Invalid data trigger: KnownValue not set")
 		}
 
