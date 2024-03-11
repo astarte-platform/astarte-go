@@ -248,6 +248,7 @@ func TestAggregateMessageWrongPaths(t *testing.T) {
 	}
 }
 
+// nolint:gocognit
 func TestTypeValidation(t *testing.T) {
 	validInterface := `
 	{
@@ -361,6 +362,13 @@ func TestTypeValidation(t *testing.T) {
 	if err := ValidateIndividualMessage(i, "/datetimeValue", &timestamp); err != nil {
 		t.Error(err)
 	}
+	timestampStr := time.Now().String()
+	if err := ValidateIndividualMessage(i, "/datetimeValue", timestampStr); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateIndividualMessage(i, "/datetimeValue", "wrong-input"); err == nil {
+		t.Error("An invalid datetimeValue should return an error.")
+	}
 
 	// Arrays
 	if err := ValidateIndividualMessage(i, "/integerarrayValue", []int{42}); err != nil {
@@ -404,6 +412,12 @@ func TestTypeValidation(t *testing.T) {
 	}
 	if err := ValidateIndividualMessage(i, "/datetimearrayValue", []*time.Time{&timestamp}); err != nil {
 		t.Error(err)
+	}
+	if err := ValidateIndividualMessage(i, "/datetimearrayValue", []string{timestampStr}); err != nil {
+		t.Error(err)
+	}
+	if err := ValidateIndividualMessage(i, "/datetimearrayValue", []string{"wrong-input"}); err == nil {
+		t.Error("An invalid datetimeValue in array should return an error.")
 	}
 }
 

@@ -3,6 +3,7 @@ module github.com/astarte-platform/astarte-go
 go 1.21
 
 require (
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/cristalhq/jwt/v3 v3.1.0
 	github.com/google/uuid v1.4.0
 	github.com/iancoleman/orderedmap v0.3.0
