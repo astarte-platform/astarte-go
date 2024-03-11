@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
 
 // ValidateAggregateMessage validates an aggregate message prepended by a path.
@@ -285,6 +287,12 @@ func validateType(mappingType AstarteMappingType, value interface{}) error {
 		if mappingType == String {
 			return nil
 		}
+		if mappingType == DateTime {
+			if _, err := dateparse.ParseAny(value.(string)); err != nil {
+				return err
+			}
+			return nil
+		}
 	case bool:
 		if mappingType == Boolean {
 			return nil
@@ -311,6 +319,14 @@ func validateType(mappingType AstarteMappingType, value interface{}) error {
 		}
 	case []string:
 		if mappingType == StringArray {
+			return nil
+		}
+		if mappingType == DateTimeArray {
+			for _, v := range value.([]string) {
+				if _, err := dateparse.ParseAny(v); err != nil {
+					return err
+				}
+			}
 			return nil
 		}
 	case []bool:
