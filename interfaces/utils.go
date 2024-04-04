@@ -245,6 +245,8 @@ func processGenericSlice(mappingType AstarteMappingType, c []interface{}) error 
 			e = validateType(Integer, v)
 		case LongInteger:
 			e = validateType(LongInteger, v)
+		case LongIntegerArray:
+			e = validateType(LongInteger, v)
 		case DoubleArray:
 			e = validateType(Double, v)
 		case StringArray:
