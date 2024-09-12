@@ -166,11 +166,41 @@ func (o *AstarteHTTPMethod) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+type AstarteTemplateType string
+
+const (
+	Mustache AstarteTemplateType = "mustache"
+)
+
+// IsValid returns an error if AstarteTriggerType does not represent a valid AstarteTemplateType
+func (t AstarteTemplateType) IsValid() error {
+	if t == Mustache {
+		return nil
+	}
+	return errors.New("invalid Astarte Template type")
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (t *AstarteTemplateType) UnmarshalJSON(b []byte) error {
+	var j string
+	if err := json.Unmarshal(b, &j); err != nil {
+		return err
+	}
+
+	*t = AstarteTemplateType(j)
+	if err := t.IsValid(); err != nil {
+		return fmt.Errorf("'%v' is not a valid AstarteTemplateType", j)
+	}
+	return nil
+}
+
 type AstarteTriggerAction struct {
-	HTTPUrl         string            `json:"http_url"`
-	HTTPMethod      AstarteHTTPMethod `json:"http_method"`
-	HTTPHeaders     map[string]string `json:"http_static_headers"`
-	IgnoreSslErrors bool              `default:"false"`
+	HTTPUrl         string              `json:"http_url"`
+	HTTPMethod      AstarteHTTPMethod   `json:"http_method"`
+	HTTPHeaders     map[string]string   `json:"http_static_headers"`
+	IgnoreSslErrors bool                `default:"false"`
+	TemplateType    AstarteTemplateType `json:"template_type,omitempty"`
+	Template        string              `json:"template,omitempty"`
 }
 type AstarteSimpleTrigger struct {
 	Type               AstarteTriggerType          `json:"type"`
