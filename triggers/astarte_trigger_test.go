@@ -140,6 +140,50 @@ func TestMissingDataFromTriggerAction(t *testing.T) {
 	if err == nil {
 		t.Error("This trigger should have Failed! invalid http method")
 	}
+
+	DeviceTriggerInvalidTemplateType := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post",
+			"template_type": "not a valid type",
+   	},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_connected",
+			"device_id": "45336"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInvalidTemplateType))
+	if err == nil {
+		t.Error("This trigger should have Failed! invalid template type")
+	}
+	DeviceTriggerEmptyTemplateType := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post",
+			"template_type": "",
+   	},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_connected",
+			"device_id": "45336"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerEmptyTemplateType))
+	if err == nil {
+		t.Error("This trigger should have Failed! invalid template type")
+	}
+
 }
 
 func TestInvalidTriggerData(t *testing.T) {
@@ -659,6 +703,28 @@ func TestParsing(t *testing.T) {
 	  }`
 
 	_, err = ParseTriggerFrom([]byte(DeviceTriggerOK))
+	if err != nil {
+		t.Error("This trigger should have passed ", err.Error())
+	}
+	DeviceTriggerOKWithTemplate := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post",
+			"template_type": "mustache",
+       		"template": "{\n  \"title\": \"High temperature\",\n  \"message\": \"The temperature measured by the device {{ device_id }} is high, its current value is {{ value }} °C.\",\n  \"recipients\": [\"some.recipient@domain.com\"]\n}"
+   	},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_connected",
+			"device_id": "45336"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerOKWithTemplate))
 	if err != nil {
 		t.Error("This trigger should have passed ", err.Error())
 	}
