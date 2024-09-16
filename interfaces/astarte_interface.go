@@ -38,7 +38,7 @@ func (t AstarteInterfaceType) IsValid() error {
 	case PropertiesType, DatastreamType:
 		return nil
 	}
-	return errors.New("invalid Astarte Interface type")
+	return fmt.Errorf("'%v' is not a valid Astarte Interface Type", t)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -49,10 +49,8 @@ func (t *AstarteInterfaceType) UnmarshalJSON(b []byte) error {
 	}
 
 	*t = AstarteInterfaceType(j)
-	if err := t.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Interface Type", j)
-	}
-	return nil
+
+	return t.IsValid()
 }
 
 // AstarteInterfaceOwnership represents the owner of an interface.
@@ -71,7 +69,7 @@ func (o AstarteInterfaceOwnership) IsValid() error {
 	case DeviceOwnership, ServerOwnership:
 		return nil
 	}
-	return errors.New("invalid Astarte Interface ownership")
+	return fmt.Errorf("'%v' is not a valid Astarte Interface Ownership", o)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -82,10 +80,8 @@ func (o *AstarteInterfaceOwnership) UnmarshalJSON(b []byte) error {
 	}
 
 	*o = AstarteInterfaceOwnership(j)
-	if err := o.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Interface Ownership", j)
-	}
-	return nil
+
+	return o.IsValid()
 }
 
 // AstarteInterfaceAggregation represents the type of Aggregation of an Interface.
@@ -104,7 +100,7 @@ func (a AstarteInterfaceAggregation) IsValid() error {
 	case IndividualAggregation, ObjectAggregation:
 		return nil
 	}
-	return errors.New("invalid Astarte Interface aggregation")
+	return fmt.Errorf("'%v' is not a valid Astarte Interface Aggregation", a)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -115,10 +111,8 @@ func (a *AstarteInterfaceAggregation) UnmarshalJSON(b []byte) error {
 	}
 
 	*a = AstarteInterfaceAggregation(j)
-	if err := a.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Interface Aggregation", j)
-	}
-	return nil
+
+	return a.IsValid()
 }
 
 // AstarteMappingReliability represents the reliability of a mapping
@@ -139,7 +133,7 @@ func (r AstarteMappingReliability) IsValid() error {
 	case UnreliableReliability, GuaranteedReliability, UniqueReliability:
 		return nil
 	}
-	return errors.New("invalid Astarte Mapping reliability")
+	return fmt.Errorf("'%v' is not a valid Astarte Mapping Reliability", r)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -150,10 +144,8 @@ func (r *AstarteMappingReliability) UnmarshalJSON(b []byte) error {
 	}
 
 	*r = AstarteMappingReliability(j)
-	if err := r.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Mapping Reliability", j)
-	}
-	return nil
+
+	return r.IsValid()
 }
 
 // AstarteMappingRetention represents retention for a single mapping
@@ -174,7 +166,7 @@ func (r AstarteMappingRetention) IsValid() error {
 	case DiscardRetention, VolatileRetention, StoredRetention:
 		return nil
 	}
-	return errors.New("invalid Astarte Mapping retention")
+	return fmt.Errorf("'%v' is not a valid Astarte Mapping Retention", r)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -185,10 +177,8 @@ func (r *AstarteMappingRetention) UnmarshalJSON(b []byte) error {
 	}
 
 	*r = AstarteMappingRetention(j)
-	if err := r.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Mapping Retention", j)
-	}
-	return nil
+
+	return r.IsValid()
 }
 
 // AstarteMappingDatabaseRetentionPolicy represents database retention policy for a single mapping
@@ -207,7 +197,7 @@ func (r AstarteMappingDatabaseRetentionPolicy) IsValid() error {
 	case NoTTL, UseTTL:
 		return nil
 	}
-	return errors.New("invalid Astarte Mapping database retention policy")
+	return fmt.Errorf("'%v' is not a valid Astarte Mapping Database Retention Policy", r)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -218,10 +208,8 @@ func (r *AstarteMappingDatabaseRetentionPolicy) UnmarshalJSON(b []byte) error {
 	}
 
 	*r = AstarteMappingDatabaseRetentionPolicy(j)
-	if err := r.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Mapping Database Retention Policy", j)
-	}
-	return nil
+
+	return r.IsValid()
 }
 
 // AstarteMappingType represents the type of a single mapping. Astarte Types are natively inferred from golang
@@ -273,7 +261,7 @@ func (m AstarteMappingType) IsValid() error {
 		DoubleArray, IntegerArray, BooleanArray, LongIntegerArray, StringArray, BinaryBlobArray, DateTimeArray:
 		return nil
 	}
-	return errors.New("invalid Astarte Mapping type")
+	return fmt.Errorf("'%v' is not a valid Astarte Mapping Type", m)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -285,10 +273,8 @@ func (m *AstarteMappingType) UnmarshalJSON(b []byte) error {
 	}
 
 	*m = AstarteMappingType(j)
-	if err := m.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Mapping Type", j)
-	}
-	return nil
+
+	return m.IsValid()
 }
 
 // AstarteInterfaceMapping represents an individual Mapping in an Astarte Interface

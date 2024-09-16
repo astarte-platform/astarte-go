@@ -42,7 +42,7 @@ func (t AstarteTriggerMatchOperator) IsValid() error {
 	case All, Equal, Differ, Bigger, BiggerEqual, Smaller, SmallerEqual, Contains, NotContains:
 		return nil
 	}
-	return errors.New("invalid Astarte Trigger type")
+	return fmt.Errorf("'%v' is not a valid AstarteTriggerMatchOperator", t)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -53,10 +53,8 @@ func (t *AstarteTriggerMatchOperator) UnmarshalJSON(b []byte) error {
 	}
 
 	*t = AstarteTriggerMatchOperator(j)
-	if err := t.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid AstarteTriggerMatchOperator", j)
-	}
-	return nil
+
+	return t.IsValid()
 }
 
 type AstarteTriggerOn string
@@ -82,7 +80,7 @@ func (t AstarteTriggerOn) IsValid() error {
 	case IncomingData, ValueStored, ValueChange, ValueChangeApplied, PathCreated, PathRemoved:
 		return nil
 	}
-	return errors.New("invalid Astarte Trigger type")
+	return fmt.Errorf("'%v' is not a valid AstarteTriggerOn", t)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -93,10 +91,8 @@ func (t *AstarteTriggerOn) UnmarshalJSON(b []byte) error {
 	}
 
 	*t = AstarteTriggerOn(j)
-	if err := t.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid AstarteTriggerOn", j)
-	}
-	return nil
+
+	return t.IsValid()
 }
 
 // AstarteTriggerType represents which kind of Astarte trigger the object represents
@@ -115,7 +111,7 @@ func (t AstarteTriggerType) IsValid() error {
 	case DataType, DeviceType:
 		return nil
 	}
-	return errors.New("invalid Astarte Trigger type")
+	return fmt.Errorf("'%v' is not a valid Astarte Trigger Type", t)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -126,10 +122,8 @@ func (t *AstarteTriggerType) UnmarshalJSON(b []byte) error {
 	}
 
 	*t = AstarteTriggerType(j)
-	if err := t.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid Astarte Trigger Type", j)
-	}
-	return nil
+
+	return t.IsValid()
 }
 
 // AstarteHTTPMethod represents the kind of http method used
@@ -149,7 +143,7 @@ func (o AstarteHTTPMethod) IsValid() error {
 	case PostMethod, GetMethod, PutMethod, PatchMethod, DeleteMethod:
 		return nil
 	}
-	return errors.New("invalid AstarteHTTPMethod")
+	return fmt.Errorf("'%v' is not a valid AstarteHTTPMethod", o)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -160,10 +154,8 @@ func (o *AstarteHTTPMethod) UnmarshalJSON(b []byte) error {
 	}
 
 	*o = AstarteHTTPMethod(j)
-	if err := o.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid AstarteHTTPMethod", j)
-	}
-	return nil
+
+	return o.IsValid()
 }
 
 type AstarteTemplateType string
@@ -177,7 +169,7 @@ func (t AstarteTemplateType) IsValid() error {
 	if t == Mustache {
 		return nil
 	}
-	return errors.New("invalid Astarte Template type")
+	return fmt.Errorf("'%v' is not a valid AstarteTemplateType", t)
 }
 
 // UnmarshalJSON unmashals a quoted json string to the enum value
@@ -188,10 +180,8 @@ func (t *AstarteTemplateType) UnmarshalJSON(b []byte) error {
 	}
 
 	*t = AstarteTemplateType(j)
-	if err := t.IsValid(); err != nil {
-		return fmt.Errorf("'%v' is not a valid AstarteTemplateType", j)
-	}
-	return nil
+
+	return t.IsValid()
 }
 
 type AstarteTriggerAction struct {
