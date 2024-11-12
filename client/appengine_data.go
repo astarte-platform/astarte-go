@@ -224,14 +224,14 @@ func (r ListDeviceInterfacesResponse) Raw(f func(*http.Response) any) any {
 }
 
 // Parses data obtained by performing a request device's aliases.
-// Returns the list of aliases as an array of strings.
+// Returns the list of aliases as a map strings to strings.
 func (r ListDeviceAliasesResponse) Parse() (any, error) {
 	defer r.res.Body.Close()
 	b, _ := io.ReadAll(r.res.Body)
-	data := gjson.GetBytes(b, "data.aliases").Array()
-	aliases := []string{}
-	for _, v := range data {
-		aliases = append(aliases, v.Str)
+	data := gjson.GetBytes(b, "data.aliases").Map()
+	aliases := map[string]string{}
+	for k, v := range data {
+		aliases[k] = v.Str
 	}
 	return aliases, nil
 }

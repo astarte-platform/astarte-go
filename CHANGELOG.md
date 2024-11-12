@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.92.2] - Unreleased
+### Fixed
+- Parse device aliases as a map, not as an array.
+
 ## [0.92.1]- 2024-09-16
 ### Added
 - Add template type support for trigger, thus enabling Mustache templating.
