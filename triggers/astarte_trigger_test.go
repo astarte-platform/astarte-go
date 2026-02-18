@@ -728,4 +728,24 @@ func TestParsing(t *testing.T) {
 	if err != nil {
 		t.Error("This trigger should have passed ", err.Error())
 	}
+	DeviceTriggerRegisteredOK := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_registered",
+			"device_id": "45336"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerRegisteredOK))
+	if err != nil {
+		t.Error("This trigger should have passed ", err.Error())
+	}
 }
