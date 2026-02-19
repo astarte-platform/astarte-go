@@ -92,6 +92,28 @@ func (t AstarteTriggerOn) IsValid() error {
 	return fmt.Errorf("'%v' is not a valid AstarteTriggerOn", t)
 }
 
+// IsValidWithType returns an error if AstarteTriggerType does not represent a valid AstarteTriggerOn for the given trigger type
+func (t AstarteTriggerOn) IsValidWithType(p AstarteTriggerType) error {
+	if p == DataType {
+		switch t {
+		case IncomingData, ValueStored, ValueChange, ValueChangeApplied, PathCreated, PathRemoved:
+			return nil
+		}
+		return fmt.Errorf("'%v' is not a valid AstarteTriggerOn for a data trigger", t)
+	}
+
+	if p == DeviceType {
+		switch t {
+		case DeviceConnected, DeviceDisconnected, DeviceError, DeviceRegistered, DeviceDeletionStarted, DeviceDeletionFinished,
+			IncomingIntrospection, InterfaceAdded, InterfaceRemoved, InterfaceMinorUpdated:
+			return nil
+		}
+		return fmt.Errorf("'%v' is not a valid AstarteTriggerOn for a device trigger", t)
+	}
+
+	return fmt.Errorf("'%v' is not a valid AstarteTriggerOn for trigger type '%v'", t, p)
+}
+
 // UnmarshalJSON unmashals a quoted json string to the enum value
 func (t *AstarteTriggerOn) UnmarshalJSON(b []byte) error {
 	var j string
@@ -291,16 +313,17 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 		return errors.New("Invalid trigger condition: Type and On must be set")
 	}
 
-	if *trigger.Type != "data_trigger" {
+	if trigger.Type.IsValid() != nil {
+		return fmt.Errorf("Invalid trigger condition: invalid Type value '%v'", *trigger.Type)
+	}
 
-		if *trigger.On != "device_connected" && *trigger.On != "device_disconnected" &&
-			*trigger.On != "device_error" && *trigger.On != "device_registered" &&
-			*trigger.On != "device_deletion_started" && *trigger.On != "device_deletion_finished" &&
-			*trigger.On != "incoming_introspection" && *trigger.On != "interface_added" &&
-			*trigger.On != "interface_removed" && *trigger.On != "interface_minor_updated" {
-			return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
-		}
+	if trigger.On.IsValidWithType(*trigger.Type) != nil {
+		return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
+	}
 
+	switch *trigger.Type {
+
+	case DeviceType:
 		if trigger.DeviceID != nil && trigger.GroupName != nil {
 			return errors.New("Invalid trigger condition: DeviceID or GroupName cannot both be set ")
 		}
@@ -337,15 +360,7 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 			return errors.New("Invalid trigger: cannot set properties for data trigger on a device trigger")
 		}
 
-	} else {
-		if *trigger.On != "incoming_data" &&
-			*trigger.On != "value_stored" &&
-			*trigger.On != "value_change" &&
-			*trigger.On != "value_change_applied" &&
-			*trigger.On != "path_created" &&
-			*trigger.On != "path_removed" {
-			return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
-		}
+	case DataType:
 		if trigger.DeviceID != nil || trigger.GroupName != nil {
 			return errors.New("Invalid trigger condition: DeviceID or GroupName cannot be set ")
 		}
@@ -364,8 +379,8 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 		if trigger.KnownValue == nil && *trigger.ValueMatchOperator != "*" {
 			return errors.New("Invalid data trigger: KnownValue not set")
 		}
-
 	}
+
 	return nil
 }
 
