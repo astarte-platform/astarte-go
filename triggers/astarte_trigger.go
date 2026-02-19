@@ -67,7 +67,10 @@ const (
 	DeviceRegistered       AstarteTriggerOn = "device_registered"
 	DeviceDeletionStarted  AstarteTriggerOn = "device_deletion_started"
 	DeviceDeletionFinished AstarteTriggerOn = "device_deletion_finished"
-
+	IncomingIntrospection  AstarteTriggerOn = "incoming_introspection"
+	InterfaceAdded         AstarteTriggerOn = "interface_added"
+	InterfaceRemoved       AstarteTriggerOn = "interface_removed"
+	InterfaceMinorUpdated  AstarteTriggerOn = "interface_minor_updated"
 	// data_trigger_type
 	IncomingData       AstarteTriggerOn = "incoming_data"
 	ValueStored        AstarteTriggerOn = "value_stored"
@@ -80,7 +83,8 @@ const (
 // IsValid returns an error if AstarteTriggerType does not represent a valid AstarteTriggerOn
 func (t AstarteTriggerOn) IsValid() error {
 	switch t {
-	case DeviceConnected, DeviceDisconnected, DeviceError, DeviceRegistered, DeviceDeletionStarted, DeviceDeletionFinished:
+	case DeviceConnected, DeviceDisconnected, DeviceError, DeviceRegistered, DeviceDeletionStarted, DeviceDeletionFinished,
+		IncomingIntrospection, InterfaceAdded, InterfaceRemoved, InterfaceMinorUpdated:
 		return nil
 	case IncomingData, ValueStored, ValueChange, ValueChangeApplied, PathCreated, PathRemoved:
 		return nil
@@ -291,7 +295,9 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 
 		if *trigger.On != "device_connected" && *trigger.On != "device_disconnected" &&
 			*trigger.On != "device_error" && *trigger.On != "device_registered" &&
-			*trigger.On != "device_deletion_started" && *trigger.On != "device_deletion_finished" {
+			*trigger.On != "device_deletion_started" && *trigger.On != "device_deletion_finished" &&
+			*trigger.On != "incoming_introspection" && *trigger.On != "interface_added" &&
+			*trigger.On != "interface_removed" && *trigger.On != "interface_minor_updated" {
 			return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
 		}
 
@@ -299,9 +305,33 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 			return errors.New("Invalid trigger condition: DeviceID or GroupName cannot both be set ")
 		}
 
-		if trigger.InterfaceName != nil ||
-			trigger.InterfaceMajor != nil ||
-			trigger.MatchPath != nil ||
+		// Checks related to Device Triggers that allow interface matching
+		if *trigger.On == InterfaceAdded || *trigger.On == InterfaceRemoved || *trigger.On == InterfaceMinorUpdated {
+
+			// For InterfaceMinorUpdated triggers, InterfaceName MUST be set and not be "*"
+			if *trigger.On == InterfaceMinorUpdated && (trigger.InterfaceName == nil || *trigger.InterfaceName == "*") {
+				return errors.New("Invalid trigger condition: InterfaceName must be set and cannot be '*' for 'interface_minor_updated' triggers")
+			}
+
+			// For InterfaceAdded and InterfaceRemoved triggers, InterfaceName can be set to "*" to catch all interfaces, but if it is not "*", then InterfaceMajor must be set
+			if trigger.InterfaceName == nil || *trigger.InterfaceName != "*" {
+				if trigger.InterfaceMajor == nil {
+					return errors.New("Invalid trigger condition: InterfaceMajor must be set when InterfaceName is not '*'")
+				}
+			}
+
+		} else {
+			// For other device triggers, InterfaceName and InterfaceMajor cannot be set
+			if trigger.InterfaceName != nil {
+				return errors.New("Invalid trigger: InterfaceName cannot be set for a trigger that is not related to interface changes")
+			}
+
+			if trigger.InterfaceMajor != nil {
+				return errors.New("Invalid trigger: InterfaceMajor cannot be set for a trigger that is not related to interface changes")
+			}
+		}
+
+		if trigger.MatchPath != nil ||
 			trigger.ValueMatchOperator != nil ||
 			trigger.KnownValue != nil {
 			return errors.New("Invalid trigger: cannot set properties for data trigger on a device trigger")

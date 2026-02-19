@@ -387,6 +387,143 @@ func TestInvalidTriggerInterface(t *testing.T) {
 	if err != nil {
 		t.Error("This trigger should have passed!")
 	}
+
+	DeviceTriggerInterfaceMinorUpdatedNoName := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "interface_minor_updated",
+			"match_path":"/*",
+			"value_match_operator":"==",
+			"known_value":"3"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceMinorUpdatedNoName))
+	if err == nil {
+		t.Error("This trigger should not have passed! no interface name specified for interface_minor_updated trigger")
+	}
+
+	DeviceTriggerInterfaceMinorUpdatedWildcardName := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "interface_minor_updated",
+			"interface_name": "*",
+			"match_path":"/*",
+			"value_match_operator":"==",
+			"known_value":"3"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceMinorUpdatedWildcardName))
+	if err == nil {
+		t.Error("This trigger should not have passed! star interface name specified for interface_minor_updated trigger")
+	}
+
+	DeviceTriggerInterfaceMinorUpdatedOkName := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "interface_minor_updated",
+			"interface_name": "AAA",
+			"interface_major": 2
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceMinorUpdatedOkName))
+	if err != nil {
+		t.Error("This trigger should have passed! Correct interface name specified for interface_minor_updated trigger")
+		t.Error(err)
+	}
+
+	DeviceTriggerInterfaceAddedOkName := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "interface_added",
+			"interface_name": "AAA",
+			"interface_major": 2
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceAddedOkName))
+	if err != nil {
+		t.Error("This trigger should have passed! Correct interface name specified for interface_added trigger")
+		t.Error(err)
+	}
+
+	DeviceTriggerInterfaceMajorSet := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_connected",
+			"interface_major": 2
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceMajorSet))
+	if err == nil {
+		t.Error("This trigger should have failed validation! interface major specified for trigger type that does not support it")
+		t.Error(err)
+	}
+
+	DeviceTriggerInterfaceNameSet := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "device_trigger",
+			"on": "device_connected",
+			"interface_name": "BBB
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DeviceTriggerInterfaceNameSet))
+	if err == nil {
+		t.Error("This trigger should have failed validation! interface name specified for trigger type that does not support it")
+		t.Error(err)
+	}
 }
 
 func TestInvalidTriggerGenericErrors(t *testing.T) {
