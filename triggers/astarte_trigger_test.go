@@ -162,7 +162,7 @@ func TestMissingDataFromTriggerAction(t *testing.T) {
 	if err == nil {
 		t.Error("This trigger should have Failed! invalid template type")
 	}
-	DeviceTriggerEmptyTemplateType := `
+	DataTriggerEmptyTemplateType := `
 	{
 		"name": "test",
 		"action": {
@@ -179,7 +179,7 @@ func TestMissingDataFromTriggerAction(t *testing.T) {
 		]
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerEmptyTemplateType))
+	_, err = ParseTriggerFrom([]byte(DataTriggerEmptyTemplateType))
 	if err == nil {
 		t.Error("This trigger should have Failed! invalid template type")
 	}
@@ -187,7 +187,7 @@ func TestMissingDataFromTriggerAction(t *testing.T) {
 }
 
 func TestInvalidTriggerData(t *testing.T) {
-	DeviceTriggerInvalidMatchOperator := `
+	DataTriggerInvalidMatchOperator := `
 	{
 		"name": "test",
 		"action": {
@@ -206,7 +206,7 @@ func TestInvalidTriggerData(t *testing.T) {
 		]
 	  }`
 
-	_, err := ParseTriggerFrom([]byte(DeviceTriggerInvalidMatchOperator))
+	_, err := ParseTriggerFrom([]byte(DataTriggerInvalidMatchOperator))
 	if err == nil {
 		t.Error("This trigger should have Failed! invalid json match operator")
 	}
@@ -286,7 +286,7 @@ func TestInvalidTriggerData(t *testing.T) {
 		},
 		"simple_triggers": [
 		  {
-			"type": "data_trigger",
+			"type": "device_trigger",
 			"on": "incoming_data"
 		  }
 		]
@@ -307,7 +307,7 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		},
 		"simple_triggers": [
 		  {
-			"type": "data_trigger",
+			"type": "device_trigger",
 			"on": "incoming_data"
 		  }
 		]
@@ -318,7 +318,7 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		t.Error("This trigger should have failed validation! no interfaces specified")
 	}
 
-	DeviceTriggerMajorNull := `
+	DataTriggerMajorNull := `
 	{
 		"name": "test",
 		"action": {
@@ -334,12 +334,12 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		]
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerMajorNull))
+	_, err = ParseTriggerFrom([]byte(DataTriggerMajorNull))
 	if err == nil {
 		t.Error("This trigger should have failed validation! no interface major specified")
 	}
 
-	DeviceTriggerMajorNotNull := `
+	DataTriggerMajorNotNull := `
 	{
 		"name": "test",
 		"action": {
@@ -359,7 +359,7 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		]
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerMajorNotNull))
+	_, err = ParseTriggerFrom([]byte(DataTriggerMajorNotNull))
 	if err != nil {
 		t.Error("This trigger should have passed!")
 	}
