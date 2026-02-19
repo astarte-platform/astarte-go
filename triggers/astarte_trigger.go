@@ -295,9 +295,6 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 			return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
 		}
 
-		if trigger.DeviceID == nil && trigger.GroupName == nil {
-			return errors.New("Invalid trigger condition: DeviceID or GroupName must be set")
-		}
 		if trigger.DeviceID != nil && trigger.GroupName != nil {
 			return errors.New("Invalid trigger condition: DeviceID or GroupName cannot both be set ")
 		}
