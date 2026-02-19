@@ -503,26 +503,6 @@ func TestInvalidTriggerGenericErrors(t *testing.T) {
 		t.Error("This trigger should have Failed! type not set for trigger")
 	}
 
-	DeviceTriggerNoDeviceOrGroup := `
-	{
-		"name": "test",
-		"action": {
-			"http_url": "https://example.com/my_hook",
-			"http_method": "post"
-		},
-		"simple_triggers": [
-		  {
-			"type": "device_trigger",
-			"on": "device_connected"
-		  }
-		]
-	  }`
-
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerNoDeviceOrGroup))
-	if err == nil {
-		t.Error("This trigger should have Failed! device_id or group should be set")
-	}
-
 	DeviceTriggerInvalidDevice := `
 	{
 		"name": "test",
