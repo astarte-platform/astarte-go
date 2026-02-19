@@ -60,10 +60,15 @@ func (t *AstarteTriggerMatchOperator) UnmarshalJSON(b []byte) error {
 type AstarteTriggerOn string
 
 const (
-	DeviceConnected    AstarteTriggerOn = "device_connected"
-	DeviceDisconnected AstarteTriggerOn = "device_disconnected"
-	DeviceError        AstarteTriggerOn = "device_error"
+	// device_trigger_type
+	DeviceConnected        AstarteTriggerOn = "device_connected"
+	DeviceDisconnected     AstarteTriggerOn = "device_disconnected"
+	DeviceError            AstarteTriggerOn = "device_error"
+	DeviceRegistered       AstarteTriggerOn = "device_registered"
+	DeviceDeletionStarted  AstarteTriggerOn = "device_deletion_started"
+	DeviceDeletionFinished AstarteTriggerOn = "device_deletion_finished"
 
+	// data_trigger_type
 	IncomingData       AstarteTriggerOn = "incoming_data"
 	ValueStored        AstarteTriggerOn = "value_stored"
 	ValueChange        AstarteTriggerOn = "value_change"
@@ -75,7 +80,7 @@ const (
 // IsValid returns an error if AstarteTriggerType does not represent a valid AstarteTriggerOn
 func (t AstarteTriggerOn) IsValid() error {
 	switch t {
-	case DeviceConnected, DeviceDisconnected, DeviceError:
+	case DeviceConnected, DeviceDisconnected, DeviceError, DeviceRegistered, DeviceDeletionStarted, DeviceDeletionFinished:
 		return nil
 	case IncomingData, ValueStored, ValueChange, ValueChangeApplied, PathCreated, PathRemoved:
 		return nil
@@ -285,7 +290,8 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 	if *trigger.Type != "data_trigger" {
 
 		if *trigger.On != "device_connected" && *trigger.On != "device_disconnected" &&
-			*trigger.On != "device_error" {
+			*trigger.On != "device_error" && *trigger.On != "device_registered" &&
+			*trigger.On != "device_deletion_started" && *trigger.On != "device_deletion_finished" {
 			return fmt.Errorf("Invalid trigger condition: invalid On value '%v'", *trigger.On)
 		}
 
