@@ -353,7 +353,7 @@ func TestInvalidTriggerInterface(t *testing.T) {
 			"interface_name": "AAA",
 			"interface_major": "2",
 			"match_path":"/*",
-			"value_match_operator":"==",
+			"value_match_operator":"*",
 			"known_value":"3"
 		  }
 		]
@@ -364,7 +364,7 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		t.Error("This trigger should have passed!")
 	}
 
-	DeviceTriggerMajorNullable := `
+	DataTriggerMatchPathMatchWrongA := `
 	{
 		"name": "test",
 		"action": {
@@ -383,9 +383,56 @@ func TestInvalidTriggerInterface(t *testing.T) {
 		]
 	  }`
 
-	_, err = ParseTriggerFrom([]byte(DeviceTriggerMajorNullable))
+	_, err = ParseTriggerFrom([]byte(DataTriggerMatchPathMatchWrongA))
+	if err == nil {
+		t.Error("This trigger should have failed validation! If the match_path is /*, the value_match_operator must be *")
+	}
+
+	DataTriggerMatchPathMatchWrongB := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "data_trigger",
+			"on": "incoming_data",
+			"interface_name": "*",
+			"match_path":"/*",
+			"known_value":"3"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DataTriggerMatchPathMatchWrongB))
+	if err == nil {
+		t.Error("This trigger should have failed validation! If the match_path is /*, the value_match_operator cannot be missing")
+	}
+
+	DataTriggerMatchPathMatchOk := `
+	{
+		"name": "test",
+		"action": {
+			"http_url": "https://example.com/my_hook",
+			"http_method": "post"
+		},
+		"simple_triggers": [
+		  {
+			"type": "data_trigger",
+			"on": "incoming_data",
+			"interface_name": "*",
+			"match_path":"/*",
+			"value_match_operator":"*",
+			"known_value":"3"
+		  }
+		]
+	  }`
+
+	_, err = ParseTriggerFrom([]byte(DataTriggerMatchPathMatchOk))
 	if err != nil {
-		t.Error("This trigger should have passed!")
+		t.Error("This trigger should have been valid! If the match_path is /*, the value_match_operator can be *")
 	}
 
 	DeviceTriggerInterfaceMinorUpdatedNoName := `

@@ -373,6 +373,11 @@ func simpleTriggerCheck(trigger *requiredAstarteSimpleTrigger) error {
 		if trigger.MatchPath == nil {
 			return errors.New("Invalid data trigger: MatchPath not set")
 		}
+		if *trigger.MatchPath == "/*" {
+			if trigger.ValueMatchOperator == nil || *trigger.ValueMatchOperator != "*" {
+				return errors.New("Invalid data trigger: if MatchPath is /*, ValueMatchOperator must be *")
+			}
+		}
 		if trigger.ValueMatchOperator == nil {
 			return errors.New("Invalid data trigger: ValueMatchOperator not set")
 		}
