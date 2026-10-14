@@ -47,6 +47,9 @@ type AstarteClaims struct {
 	Housekeeping    []string `json:"a_ha,omitempty"`
 	RealmManagement []string `json:"a_rma,omitempty"`
 	Pairing         []string `json:"a_pa,omitempty"`
+
+	Sub string `json:"sub,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 func (u *AstarteClaims) MarshalBinary() ([]byte, error) {
@@ -57,13 +60,13 @@ func (u *AstarteClaims) MarshalBinary() ([]byte, error) {
 // servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
 // a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
 func GenerateAstarteJWTFromKeyFile(privateKeyFile string, servicesAndClaims map[astarteservices.AstarteService][]string,
-	ttlSeconds int64) (jwtString string, err error) {
+	ttlSeconds int64, userID string, roles []string) (jwtString string, err error) {
 	keyPEM, err := ioutil.ReadFile(privateKeyFile)
 	if err != nil {
 		return "", err
 	}
 
-	return GenerateAstarteJWTFromPEMKey(keyPEM, servicesAndClaims, ttlSeconds)
+	return GenerateAstarteJWTFromPEMKey(keyPEM, servicesAndClaims, ttlSeconds, userID, roles)
 }
 
 // ParsePrivateKeyFromPEM parses a PEM encoded private key
@@ -109,7 +112,7 @@ func ParsePrivateKeyFromPEM(key []byte) (interface{}, error) {
 // servicesAndClaims specifies which services with which claims the token will be authorized to access. Leaving
 // a claim empty will imply `.*::.*`, aka access to the entirety of the service's API tree
 func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[astarteservices.AstarteService][]string,
-	ttlSeconds int64) (jwtString string, err error) {
+	ttlSeconds int64, userID string, roles []string) (jwtString string, err error) {
 	key, err := ParsePrivateKeyFromPEM(privateKeyPEM)
 	if err != nil {
 		return "", err
@@ -124,6 +127,17 @@ func GenerateAstarteJWTFromPEMKey(privateKeyPEM []byte, servicesAndClaims map[as
 		exp := now.Add(time.Duration(ttlSeconds) * time.Second)
 		claims.ExpiresAt = jwt.NewNumericDate(exp)
 	}
+
+	if userID != "" {
+		claims.Sub = userID
+	}
+
+
+	if len(roles) != 0 {
+
+		claims.Roles = roles
+	}
+
 
 	for svc, c := range servicesAndClaims {
 		if len(c) == 0 {
