@@ -290,7 +290,7 @@ func (c *Client) getJWT() string {
 	}
 	if c.token == "" {
 		// if we're here, we can safely assume that the key was OK
-		token, _ := auth.GenerateAstarteJWTFromPEMKey(c.privateKey, servicesAndClaims, int64(c.expiry), "")
+		token, _ := auth.GenerateAstarteJWTFromPEMKey(c.privateKey, servicesAndClaims, int64(c.expiry), "", []string{} )
 		return token
 	}
 	return c.token
